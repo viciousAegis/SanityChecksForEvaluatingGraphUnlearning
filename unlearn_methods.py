@@ -3,25 +3,35 @@ import time
 import numpy as np
 import torch
 
-#Suitable only for feature unlearning
+
+# Suitable only for feature unlearning
 class Projector:
-    def __init__(self, model, data, evaluation_metric, delete_nodes_all, num_batches=10, x_iters=3, y_iters=3):
-        #model optim basically stores the pretrained model
-        #projector assumes that the model is already trained, and its state dict is available
-        self.model_optim= model
-        self.data= data
-        self.evaluation_metric= evaluation_metric
-        self.num_batches= num_batches
+    def __init__(
+        self,
+        model,
+        data,
+        evaluation_metric,
+        delete_nodes_all,
+        num_batches=10,
+        x_iters=3,
+        y_iters=3,
+    ):
+        # model optim basically stores the pretrained model
+        # projector assumes that the model is already trained, and its state dict is available
+        self.model_optim = model
+        self.data = data
+        self.evaluation_metric = evaluation_metric
+        self.num_batches = num_batches
 
-        #delete_nodes_all is the set of nodes to be deleted
-        #In paper implementation, a fraction is randomly chosen from the train set and those features are unlearned
-        #In our implementation, we have a set of poisoned data which we need to unlearn
-        #x_iters and y_iters seem to be unlearning hyperparameters, to check
-        self.delete_nodes_all= delete_nodes_all
-        self.x_iters=x_iters
-        self.y_iters=y_iters
+        # delete_nodes_all is the set of nodes to be deleted
+        # In paper implementation, a fraction is randomly chosen from the train set and those features are unlearned
+        # In our implementation, we have a set of poisoned data which we need to unlearn
+        # x_iters and y_iters seem to be unlearning hyperparameters, to check
+        self.delete_nodes_all = delete_nodes_all
+        self.x_iters = x_iters
+        self.y_iters = y_iters
 
-    #Return unlearn score, unlearn time, model with unlearned features
+    # Return unlearn score, unlearn time, model with unlearned features
     def unlearn(self):
         num_nodes = self.data.x.size(0)
         remain_nodes = np.arange(num_nodes)
@@ -64,9 +74,9 @@ class Projector:
 
             W_optim = torch.cat(W_optim_part_unlearn, dim=0)
 
-        #Copy the original model and then set its new parameters, evaluation of the new model
-        total_time= time.time() - start_time
+        # Copy the original model and then set its new parameters, evaluation of the new model
+        total_time = time.time() - start_time
         model_unlearn = copy.deepcopy(self.model_optim)
         model_unlearn.W.data = W_optim
-        evaluation_score= self.evaluation_metric(model_unlearn)
+        evaluation_score = self.evaluation_metric(model_unlearn)
         return evaluation_score, total_time, model_unlearn
