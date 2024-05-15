@@ -43,28 +43,28 @@ def load_dataset(dataset_name='Cora', data_dir='data/grb-cora', custom_dataset=F
     dataset = Dataset(name='grb-cora', data_dir=data_dir, mode='hard')
     return dataset
 
-def train_model(dataset, model_name):
+def train_model(dataset, model_name, lr=0.01, n_epoch=200, hidden_features=[64, 64], n_layers=3):
 
     model = GCN(in_features=dataset.num_features,
                 out_features=dataset.num_classes,
-                hidden_features=[64, 64], n_layers=3)
+                hidden_features=hidden_features, n_layers=n_layers)
     
     if model_name == 'GIN':
         model = GIN(in_features=dataset.num_features,
                 out_features=dataset.num_classes,
-                hidden_features=[64, 64], n_layers=3)
+                hidden_features=hidden_features, n_layers=n_layers)
     elif model_name == 'GraphSAGE':
         model = GraphSAGE(in_features=dataset.num_features,
                 out_features=dataset.num_classes,
-                hidden_features=[64, 64], n_layers=3)
+                hidden_features=hidden_features, n_layers=n_layers)
     elif model_name == 'MLP':
         model = MLP(in_features=dataset.num_features,
                 out_features=dataset.num_classes,
-                hidden_features=[64, 64], n_layers=3)
+                hidden_features=hidden_features, n_layers=n_layers)
         
-    adam = torch.optim.Adam(model.parameters(), lr=0.01)
+    adam = torch.optim.Adam(model.parameters(), lr=lr)
     trainer = Trainer(dataset=dataset, optimizer=adam, loss=torch.nn.functional.nll_loss)
-    trainer.train(model=model, n_epoch=200, train_mode="inductive")
+    trainer.train(model=model, n_epoch=n_epoch, train_mode="inductive")
     return model
 
 def test_attacks(model, dataset, attack_type='tdgia'):
@@ -114,6 +114,14 @@ if __name__ == "__main__":
                         help='Use custom dataset (default: True)')
     parser.add_argument('--model', type=str, default='GCN', choices=['GCN', 'GIN', 'GraphSAGE', 'MLP'],
                         help='Model to use (default: GCN)')
+    parser.add_argument('--lr', type=float, default=0.01,
+                        help='Learning rate for optimizer (default: 0.01)')
+    parser.add_argument('--n_epoch', type=int, default=200,
+                        help='Number of epochs to train (default: 200)')
+    parser.add_argument('--hidden_features', nargs='+', type=int, default=[64, 64],
+                        help='Hidden layer sizes (default: [64, 64])')
+    parser.add_argument('--n_layers', type=int, default=3,
+                        help='Number of layers in the model (default: 3)')
     args = parser.parse_args()
 
     # ToDo: give options for dataset (not sure how to do this)
