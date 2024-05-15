@@ -1,8 +1,8 @@
-from config import args
-from dataset import load_dataset
-from poison_methods import attack
-from model_utils import train_model
-from unlearn_methods import get_unlearn_method, UnlearnMethod
+from src.config import args
+from src.dataset import load_dataset
+from src.poison_methods import attack
+from src.model_utils import train_model
+from src.unlearn_methods import get_unlearn_method, UnlearnMethod
 
 
 if __name__ == "__main__":

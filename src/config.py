@@ -1,7 +1,8 @@
 import argparse
 
+
 def load_args():
-    parser = argparse.ArgumentParser(description="GCN Attack Testing")
+    parser = argparse.ArgumentParser(description="GNN Attack Testing")
     parser.add_argument(
         "--attack",
         type=str,
@@ -9,11 +10,6 @@ def load_args():
         choices=["tdgia", "fgsm", "pgd"],
         help="Attack type to test (default: tdgia)",
     )  # toAdd: rand, speit ?
-    parser.add_argument(
-        "--custom_dataset",
-        action="store_true",
-        help="Use custom dataset (default: True)",
-    )
     parser.add_argument(
         "--model",
         type=str,
@@ -47,5 +43,6 @@ def load_args():
         help="Number of layers in the model (default: 3)",
     )
     return parser.parse_args()
+
 
 args = load_args()

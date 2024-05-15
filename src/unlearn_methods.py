@@ -91,6 +91,7 @@ class Projector(UnlearnMethod):
         evaluation_score = self.evaluation_metric(model_unlearn)
         return evaluation_score, total_time, model_unlearn
 
+
 def get_unlearn_method(name, **kwargs):
     if name == "projector":
         return Projector(**kwargs)

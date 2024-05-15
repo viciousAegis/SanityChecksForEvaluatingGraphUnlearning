@@ -1,5 +1,3 @@
-
-
 from grb.attack.injection.fgsm import FGSM
 from grb.attack.injection.pgd import PGD
 from grb.attack.injection.tdgia import TDGIA
@@ -27,7 +25,7 @@ def attack(model, dataset, attack_type="tdgia"):
         sequential_step=0.2,
     )
     adj = dataset.adj.tocoo()
-    
+
     poisoned_adj, poisoned_x = attack.attack(
         model=model,
         adj=adj,
@@ -35,5 +33,5 @@ def attack(model, dataset, attack_type="tdgia"):
         target_mask=dataset.test_mask,
         adj_norm_func=GCNAdjNorm,
     )
-    
+
     return poisoned_adj, poisoned_x
