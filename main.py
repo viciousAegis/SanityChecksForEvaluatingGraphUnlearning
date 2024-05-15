@@ -9,6 +9,8 @@ from grb.model.torch import GraphSAGE
 from grb.model.torch import MLP
 from grb.trainer import Trainer
 from grb.attack.injection.tdgia import TDGIA
+from grb.attack.injection.pgd import PGD
+from grb.attack.injection.fgsm import FGSM
 from grb.utils.normalize import GCNAdjNorm
 from torch_geometric.datasets import Planetoid
 from torch_geometric.utils import to_scipy_sparse_matrix
@@ -87,6 +89,44 @@ def test_attacks(model, dataset, attack_type='tdgia'):
             target_mask=dataset.test_mask,
             adj_norm_func=GCNAdjNorm,
         )
+    
+    elif attack_type == 'pgd':
+        pgd = PGD(
+            epsilon=0.3,
+            n_epoch=10,
+            n_inject_max=20,
+            n_edge_max=20,
+            feat_lim_min=-0.9,
+            feat_lim_max=0.9,
+        )
+
+        adj = dataset.adj.tocoo()
+        rst = pgd.attack(
+            model=model,
+            adj=adj,
+            features=dataset.features,
+            target_mask=dataset.test_mask,
+            adj_norm_func=GCNAdjNorm,
+        )
+
+    elif attack_type == 'fgsm':
+        fgsm = FGSM(
+            epsilon=0.3,
+            n_epoch=10,
+            n_inject_max=20,
+            n_edge_max=20,
+            feat_lim_min=-0.9,
+            feat_lim_max=0.9,
+        )
+
+        adj = dataset.adj.tocoo()
+        rst = fgsm.attack(
+            model=model,
+            adj=adj,
+            features=dataset.features,
+            target_mask=dataset.test_mask,
+            adj_norm_func=GCNAdjNorm,
+        )
        
 
         """
@@ -109,7 +149,7 @@ def test_attacks(model, dataset, attack_type='tdgia'):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='GCN Attack Testing')
     parser.add_argument('--attack', type=str, default='tdgia', choices=['tdgia', 'fgsm', 'pgd'],
-                        help='Attack type to test (default: tdgia)')
+                        help='Attack type to test (default: tdgia)') # toAdd: rand, speit ?
     parser.add_argument('--custom_dataset', action='store_true',
                         help='Use custom dataset (default: True)')
     parser.add_argument('--model', type=str, default='GCN', choices=['GCN', 'GIN', 'GraphSAGE', 'MLP'],
@@ -125,8 +165,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # ToDo: give options for dataset (not sure how to do this)
-    # ToDo: give options for which model to run on
-    # ToDo: give options for which attack to run 
+    # ToDo: give options for which model to run on [Done]
+    # ToDo: give options for which attack to run [Working]
 
     dataset = load_dataset(custom_dataset=args.custom_dataset)
     model = train_model(dataset, model_name=args.model)
