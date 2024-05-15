@@ -1,4 +1,4 @@
-grb.egg-info
 data
 grb_data
-tmp*/
+tmp_*/
+grb.*/
