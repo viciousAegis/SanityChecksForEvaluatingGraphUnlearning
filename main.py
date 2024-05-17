@@ -6,7 +6,7 @@ from src.unlearn_methods import get_unlearn_method, UnlearnMethod
 
 
 if __name__ == "__main__":
-    dataset = load_dataset(custom_dataset=args.custom_dataset)
+    dataset = load_dataset()
     model = train_model(dataset, model_name=args.model)
     poisoned_adj, poisoned_x = attack(
         model, dataset, attack_type=args.attack
