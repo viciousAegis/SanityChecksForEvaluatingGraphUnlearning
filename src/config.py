@@ -7,7 +7,7 @@ def load_args():
         "--attack",
         type=str,
         default="tdgia",
-        choices=["tdgia", "fgsm", "pgd"],
+        choices=["tdgia", "fgsm", "pgd", "rand", "speit"],
         help="Attack type to test (default: tdgia)",
     )  # toAdd: rand, speit ?
     parser.add_argument(

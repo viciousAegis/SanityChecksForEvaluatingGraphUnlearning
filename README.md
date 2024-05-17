@@ -15,7 +15,7 @@ GNN Attack Testing
 
 options:
   -h, --help            show this help message and exit
-  --attack {tdgia,fgsm,pgd}
+  --attack {tdgia,fgsm,pgd,rand,speit}
                         Attack type to test (default: tdgia)
   --model {GCN,GIN,GraphSAGE,MLP}
                         Model to use (default: GCN)
@@ -24,4 +24,3 @@ options:
   --hidden_features HIDDEN_FEATURES [HIDDEN_FEATURES ...]
                         Hidden layer sizes (default: [64, 64])
   --n_layers N_LAYERS   Number of layers in the model (default: 3)
-```
