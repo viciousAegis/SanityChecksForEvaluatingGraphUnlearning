@@ -15,8 +15,10 @@ GNN Attack Testing
 
 options:
   -h, --help            show this help message and exit
-  --attack {tdgia,fgsm,pgd,rand,speit}
-                        Attack type to test (default: tdgia)
+  --attack_type {injection,modification}
+                        Which type of attack (default: injection)
+  --attack {tdgia,fgsm,pgd,rand,speit,dice,fga,flip,nea,stack}
+                        Attack type to test (default: tdgia when --attack_type is injection, dice otherwise)
   --model {GCN,GIN,GraphSAGE,MLP}
                         Model to use (default: GCN)
   --lr LR               Learning rate for optimizer (default: 0.01)
