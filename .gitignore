@@ -4,3 +4,7 @@ tmp_*/
 grb.*/
 
 .venv/
+
+__pycache__/
+
+.DS_Store

@@ -4,8 +4,17 @@ import numpy as np
 import torch
 
 
+class UnlearnMethod:
+    def __init__(self, name):
+        self.name = name
+
+    def unlearn(self):
+        # abstract method
+        pass
+
+
 # Suitable only for feature unlearning
-class Projector:
+class Projector(UnlearnMethod):
     def __init__(
         self,
         model,
@@ -16,6 +25,7 @@ class Projector:
         x_iters=3,
         y_iters=3,
     ):
+        super(Projector, self).__init__("projector")
         # model optim basically stores the pretrained model
         # projector assumes that the model is already trained, and its state dict is available
         self.model_optim = model
@@ -80,3 +90,10 @@ class Projector:
         model_unlearn.W.data = W_optim
         evaluation_score = self.evaluation_metric(model_unlearn)
         return evaluation_score, total_time, model_unlearn
+
+
+def get_unlearn_method(name, **kwargs):
+    if name == "projector":
+        return Projector(**kwargs)
+    else:
+        raise ValueError("Unlearn method not found")
