@@ -48,7 +48,7 @@ class DICE(ModificationAttack):
                         degrees[index[1]] -= 1
 
         index_delete = np.random.permutation(target_index_pair)[:n_delete]
-        if index_delete != []:
+        if index_delete.size > 0:
             adj_attack[index_delete[:, 0], index_delete[:, 1]] = 0
             adj_attack[index_delete[:, 1], index_delete[:, 0]] = 0
 

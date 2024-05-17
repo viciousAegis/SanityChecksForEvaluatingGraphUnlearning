@@ -4,12 +4,18 @@ import argparse
 def load_args():
     parser = argparse.ArgumentParser(description="GNN Attack Testing")
     parser.add_argument(
+        "--attack_type",
+        type=str,
+        default="injection",
+        choices=["injection", "modification"],
+        help="Which type of attack (default: injection)",
+    )
+    parser.add_argument(
         "--attack",
         type=str,
-        default="tdgia",
-        choices=["tdgia", "fgsm", "pgd", "rand", "speit"],
-        help="Attack type to test (default: tdgia)",
-    )  # toAdd: rand, speit ?
+        choices=["tdgia", "fgsm", "pgd", "rand", "speit", "dice", "fga", "flip", "nea", "stack"],
+        help="Attack type to test (default: tdgia when --attack_type is injection, dice otherwise)",
+    ) 
     parser.add_argument(
         "--model",
         type=str,
@@ -42,7 +48,12 @@ def load_args():
         default=3,
         help="Number of layers in the model (default: 3)",
     )
-    return parser.parse_args()
-
+    args = parser.parse_args()
+    if args.attack is None:
+        if args.attack_type == "injection":
+            args.attack = "tdgia"
+        elif args.attack_type == "modification":
+            args.attack = "dice"
+    return args
 
 args = load_args()
