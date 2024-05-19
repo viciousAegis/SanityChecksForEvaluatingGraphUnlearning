@@ -39,9 +39,8 @@ def propagate(features, k, adj_norm):
     return feature_list[-1]
 
 
-def get_adj_mat(coo_mat):
-    maxv = torch.max(coo_mat) + 1
-    mat = torch.zeros(maxv, maxv)
+def get_adj_mat(coo_mat, num_nodes):
+    mat = torch.zeros(num_nodes, num_nodes)
 
     for i in range(len(coo_mat[0])):
         a, b = coo_mat[0][i].item(), coo_mat[1][i].item()
@@ -241,7 +240,7 @@ class MEGU(UnlearnMethod):
 
         start_time = time.time()
         self.target_model.eval()
-        out = self.target_model(self.data.x, get_adj_mat(self.data.edge_index))
+        out = self.target_model(self.data.x, get_adj_mat(self.data.edge_index, self.data.num_nodes))
         y = self.data.y.cpu()
         if self.args["dataset_name"] == "ppi":
             y_hat = torch.sigmoid(out).cpu().detach().numpy()
@@ -323,15 +322,15 @@ class MEGU(UnlearnMethod):
 
         y_soft = pos.correct(
             y_soft,
-            preds[self.data.train_mask],
+            preds[self.data.train_mask].type(torch.LongTensor),
             self.data.train_mask,
-            self.data.edge_index_unlearn,
+            self.data.edge_index_unlearn.type(torch.LongTensor),
         )
         y_soft = pos.smooth(
             y_soft,
-            preds[self.data.train_mask],
+            preds[self.data.train_mask].type(torch.LongTensor),
             self.data.train_mask,
-            self.data.edge_index_unlearn,
+            self.data.edge_index_unlearn.type(torch.LongTensor),
         )
 
         return y_soft
@@ -349,7 +348,7 @@ class MEGU(UnlearnMethod):
 
         with torch.no_grad():
             self.target_model.eval()
-            preds = self.target_model(self.data.x, get_adj_mat(self.data.edge_index))
+            preds = self.target_model(self.data.x, get_adj_mat(self.data.edge_index, self.data.num_nodes))
             if self.args["dataset_name"] == "ppi":
                 preds = torch.sigmoid(preds).ge(0.5)
                 preds = preds.type_as(self.data.y)
@@ -361,8 +360,13 @@ class MEGU(UnlearnMethod):
             self.target_model.train()
             operator.train()
             optimizer.zero_grad()
+
+            # print("SHAPEEEE ERORORROROR")
+            # print(self.data.x_unlearn.shape)
+            # print(get_adj_mat(self.data.edge_index_unlearn, self.data.num_nodes).shape)
+
             out_ori = self.target_model(
-                self.data.x_unlearn, get_adj_mat(self.data.edge_index_unlearn)
+                self.data.x_unlearn, get_adj_mat(self.data.edge_index_unlearn, self.data.num_nodes)
             )
             out = operator(out_ori)
 
@@ -378,13 +382,16 @@ class MEGU(UnlearnMethod):
                     out_ori[self.neighbor_khop], preds[self.neighbor_khop]
                 )
             else:
-                loss_u = criterionKD(
+                loss_u= criterionKD(
                     out_ori[self.temp_node], out[self.temp_node]
-                ) - F.cross_entropy(out[self.temp_node], preds[self.temp_node])
+                ) - F.cross_entropy(
+                    out[self.temp_node], preds[self.temp_node].type(torch.LongTensor)
+                )
+
                 loss_r = criterionKD(
                     out[self.neighbor_khop], out_ori[self.neighbor_khop]
                 ) + F.cross_entropy(
-                    out_ori[self.neighbor_khop], preds[self.neighbor_khop]
+                    out_ori[self.neighbor_khop], preds[self.neighbor_khop].type(torch.LongTensor)
                 )
 
             loss = self.args["kappa"] * loss_u + loss_r
@@ -395,7 +402,7 @@ class MEGU(UnlearnMethod):
         unlearn_time = time.time() - start_time
         self.target_model.eval()
         test_out = self.target_model(
-            self.data.x_unlearn, get_adj_mat(self.data.edge_index_unlearn)
+            self.data.x_unlearn, get_adj_mat(self.data.edge_index_unlearn, self.data.num_nodes)
         )
         if self.args["dataset_name"] == "ppi":
             out = torch.sigmoid(test_out)

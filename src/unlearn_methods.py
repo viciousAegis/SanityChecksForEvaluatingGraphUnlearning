@@ -25,3 +25,9 @@ def make_geometric_data(poisoned_adj, poisoned_x, dataset):
     #for MEGU code, required to have data.num_classes= dataset.num_classes
     data.num_classes= dataset.num_classes
     return data
+
+def edge_index_transformation(data):
+    row_indices = data.edge_index.row
+    col_indices = data.edge_index.col
+    edges = torch.tensor(np.vstack((col_indices, row_indices)))
+    return edges
