@@ -7,7 +7,8 @@ from src.utils import build_grb_dataset, make_geometric_data
 
 if __name__ == "__main__":
     dataset = load_dataset()
-
+    print(f"Correct Number of Nodes: {dataset.num_nodes}")
+    print(dataset.num_nodes)
     model = train_model(
         dataset=dataset,
         model=build_model(
@@ -22,8 +23,8 @@ if __name__ == "__main__":
     poisoned_adj, poisoned_x = attack(
         model, dataset, attack_type=args.attack
     )  # attack returns the poisoned adj and features
-
     poisoned_dataset = build_grb_dataset(poisoned_adj, poisoned_x, dataset)
+    print(f"Poisoned Number of Nodes: {poisoned_dataset.num_nodes}")
 
     #Model is trained on the poisoned data
     poison_trained_model = train_model(
@@ -44,20 +45,16 @@ if __name__ == "__main__":
         "is_vary": False,
         "cuda": 0,
         "num_threads": 1,
-        "exp": "Unlearn",
-        "method": "MEGU",
-        "target_model": "GCN",
         "inductive": "normal",
-        "dataset_name": "citeseer",
         "unlearn_task": "node",
-        "unlearn_ratio": 0.1,
+        "dataset_name":"citeseer",
         "is_split": True,
         "test_ratio": 0.2,
         "num_epochs": 100,
         "num_runs": 2,
         "batch_size": 2048,
         "test_batch_size": 2048,
-        "unlearn_lr": 0.05,
+        "unlearn_lr": 1e-4,
         "kappa": 0.01,
         "alpha1": 0.8,
         "alpha2": 0.5,

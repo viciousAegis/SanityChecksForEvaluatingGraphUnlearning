@@ -163,32 +163,28 @@ class MEGU(UnlearnMethod):
             #     replace=False,
             # )
             unique_nodes= self.data.deletion_indices
-            print("HIIIII")
-            print(unique_nodes.shape)
-            print(unique_nodes.dtype)
-            print(unique_nodes)
             self.data.edge_index_unlearn = self.update_edge_index_unlearn(unique_nodes)
 
-        if self.args["unlearn_task"] == "edge":
-            remove_indices = np.random.choice(
-                unique_indices,
-                int(unique_indices.shape[0] * self.args["unlearn_ratio"]),
-                replace=False,
-            )
-            remove_edges = edge_index[:, remove_indices]
-            unique_nodes = np.unique(remove_edges)
+        # if self.args["unlearn_task"] == "edge":
+        #     remove_indices = np.random.choice(
+        #         unique_indices,
+        #         int(unique_indices.shape[0] * self.args["unlearn_ratio"]),
+        #         replace=False,
+        #     )
+        #     remove_edges = edge_index[:, remove_indices]
+        #     unique_nodes = np.unique(remove_edges)
 
-            self.data.edge_index_unlearn = self.update_edge_index_unlearn(
-                unique_nodes, remove_indices
-            )
+        #     self.data.edge_index_unlearn = self.update_edge_index_unlearn(
+        #         unique_nodes, remove_indices
+        #     )
 
-        if self.args["unlearn_task"] == "feature":
-            unique_nodes = np.random.choice(
-                len(self.train_indices),
-                int(len(self.train_indices) * self.args["unlearn_ratio"]),
-                replace=False,
-            )
-            self.data.x_unlearn[unique_nodes] = 0.0
+        # if self.args["unlearn_task"] == "feature":
+        #     unique_nodes = np.random.choice(
+        #         len(self.train_indices),
+        #         int(len(self.train_indices) * self.args["unlearn_ratio"]),
+        #         replace=False,
+        #     )
+        #     self.data.x_unlearn[unique_nodes] = 0.0
 
         self.temp_node = unique_nodes
 
@@ -365,7 +361,7 @@ class MEGU(UnlearnMethod):
                 preds = torch.argmax(preds, axis=1).type_as(self.data.y)
 
         start_time = time.time()
-        for epoch in range(30):
+        for epoch in range(self.args["num_epochs"]):
             self.target_model.train()
             operator.train()
             optimizer.zero_grad()
@@ -406,7 +402,7 @@ class MEGU(UnlearnMethod):
                 )
 
             loss = self.args["kappa"] * loss_u + loss_r
-
+            print(f"Val Loss: {loss}")
             loss.backward()
             optimizer.step()
 
@@ -426,6 +422,10 @@ class MEGU(UnlearnMethod):
         if self.args["dataset_name"] == "ppi":
             test_f1 = calc_f1(y, y_hat, self.data.test_mask, multilabel=True)
         else:
+            print("HERREEE")
+            print(self.data.test_mask)
+            print(self.data.test_mask.shape)
+            print(sum(self.data.test_mask))
             test_f1 = calc_f1(y, y_hat, self.data.test_mask)
 
         return unlearn_time, test_f1

@@ -31,5 +31,5 @@ def train_model(dataset, model, lr=0.01, n_epoch=200):
     trainer = Trainer(
         dataset=dataset, optimizer=adam, loss=torch.nn.functional.nll_loss
     )
-    trainer.train(model=model, n_epoch=n_epoch, train_mode="inductive")
+    trainer.train(model=model, n_epoch=n_epoch, train_mode="transductive")
     return model
