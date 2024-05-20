@@ -2,12 +2,8 @@ from src.config import args
 from src.dataset import load_dataset
 from src.poison_methods import attack
 from src.model_utils import train_model, build_model
-from src.unlearn_methods import (
-    get_unlearn_method,
-    make_geometric_data,
-    edge_index_transformation,
-)
-from src.utils import build_grb_dataset
+from src.unlearn_methods import get_unlearn_method
+from src.utils import build_grb_dataset, make_geometric_data
 
 if __name__ == "__main__":
     dataset = load_dataset()
@@ -29,6 +25,7 @@ if __name__ == "__main__":
 
     poisoned_dataset = build_grb_dataset(poisoned_adj, poisoned_x, dataset)
 
+    #Model is trained on the poisoned data
     poison_trained_model = train_model(
         dataset=poisoned_dataset,
         model=build_model(
@@ -39,6 +36,9 @@ if __name__ == "__main__":
             n_layers=3,
         ),
     )
+    #Data into geometric
+    poisoned_data = make_geometric_data(poisoned_adj, poisoned_x, dataset)
+
 
     args_dict = {
         "is_vary": False,
@@ -63,15 +63,4 @@ if __name__ == "__main__":
         "alpha2": 0.5,
     }
 
-    data = make_geometric_data(poisoned_adj, poisoned_x, dataset)
-    data.edge_index = edge_index_transformation(data)
-
-    model2 = build_model(
-        model_name=args.model,
-        in_features=dataset.num_features,
-        out_features=dataset.num_classes,
-        hidden_features=[64, 64],
-        n_layers=3,
-    )
-
-    get_unlearn_method("megu", args=args_dict, model=model2, data=data)
+    get_unlearn_method("megu", args=args_dict, model=poison_trained_model, data=poisoned_data)
