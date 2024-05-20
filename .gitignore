@@ -4,16 +4,6 @@ grb.*/
 
 .venv/
 venv/
-src/__pycache__/
-grb/__pycache__/
-grb/attack/__pycache__/
-grb/injection/__pycache__/
-grb/dataset/__pycache__/
-grb/defense/__pycache__/
-grb/evaluator/__pycache__/
-grb/model/__pycache__/
-grb/utils/__pycache__/
-grb/trainer/__pycache__/
 
 __pycache__/
 main.ipynb

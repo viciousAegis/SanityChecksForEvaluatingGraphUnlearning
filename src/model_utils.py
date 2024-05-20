@@ -17,17 +17,16 @@ def get_model(model_name):
         return MLP
 
 
-def train_model(
-    dataset, model_name, lr=0.01, n_epoch=200, hidden_features=[64, 64], n_layers=3
-):
-
-    model = get_model(model_name)(
-        in_features=dataset.num_features,
-        out_features=dataset.num_classes,
+def build_model(model_name, in_features, out_features, hidden_features, n_layers):
+    return get_model(model_name)(
+        in_features=in_features,
+        out_features=out_features,
         hidden_features=hidden_features,
         n_layers=n_layers,
     )
 
+
+def train_model(dataset, model, lr=0.01, n_epoch=200):
     adam = torch.optim.Adam(model.parameters(), lr=lr)
     trainer = Trainer(
         dataset=dataset, optimizer=adam, loss=torch.nn.functional.nll_loss
