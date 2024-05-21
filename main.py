@@ -60,4 +60,12 @@ if __name__ == "__main__":
         "alpha2": 0.5,
     }
 
-    get_unlearn_method("megu", args=args_dict, model=poison_trained_model, data=poisoned_data)
+    args_dict2={
+        "test_ratio": 0.2,
+        "num_runs": 2,
+        "iteration":5,
+        "damp":0.0,
+        "scale":50,
+    }
+
+    get_unlearn_method("gif", args=args_dict2, model=poison_trained_model, data=poisoned_data)

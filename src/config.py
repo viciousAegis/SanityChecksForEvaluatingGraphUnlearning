@@ -26,7 +26,7 @@ def load_args():
     parser.add_argument(
         "--n_epoch",
         type=int,
-        default=200,
+        default= 20, #200,
         help="Number of epochs to train (default: 200)",
     )
     parser.add_argument(
