@@ -11,11 +11,8 @@ class Projector(UnlearnMethod):
         self,
         model,
         data,
-        evaluation_metric,
-        delete_nodes_all,
-        num_batches=10,
-        x_iters=3,
-        y_iters=3,
+        args,
+        evaluation_metric=None,
     ):
         super(Projector, self).__init__("projector")
         # model optim basically stores the pretrained model
@@ -23,23 +20,26 @@ class Projector(UnlearnMethod):
         self.model_optim = model
         self.data = data
         self.evaluation_metric = evaluation_metric
-        self.num_batches = num_batches
+        self.args= args
 
         # delete_nodes_all is the set of nodes to be deleted
         # In paper implementation, a fraction is randomly chosen from the train set and those features are unlearned
         # In our implementation, we have a set of poisoned data which we need to unlearn
         # x_iters and y_iters seem to be unlearning hyperparameters, to check
-        self.delete_nodes_all = delete_nodes_all
-        self.x_iters = x_iters
-        self.y_iters = y_iters
+        self.delete_nodes_all = self.data.deletion_indices
+        self.num_batches = self.args["num_batches"]
+        self.x_iters = self.args["x_iters"]
+        self.y_iters = self.args["y_iters"]
+
+        #unlearning step
+        self.unlearn()
 
     # Return unlearn score, unlearn time, model with unlearned features
     def unlearn(self):
         num_nodes = self.data.x.size(0)
         remain_nodes = np.arange(num_nodes)
         feat_dim = self.data.x.size(1)
-        label_dim = self.data.y_one_hot_train.size(1)
-
+        label_dim = self.data.y.size(0)
         W_optim = self.model_optim.W.data.clone().cpu()
 
         batch = self.num_batches
