@@ -11,6 +11,8 @@ def get_unlearn_method(name, **kwargs):
     elif name=="gif":
         return ExpGraphInfluenceFunction(**kwargs)
     elif name=="gnndelete":
-        return GNNDeletion(**kwargs)
+        gnn_deletion = GNNDeletion(**kwargs)
+        gnn_deletion.run()
+        return 
     else:
         raise ValueError("Unlearn method not found")

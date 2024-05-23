@@ -979,7 +979,3 @@ class GNNDeletion:
         self.load_model()
         self.setup_optimizer()
         self.train()
-
-if __name__ == "__main__":
-    gnn_deletion = GNNDeletion(args)
-    gnn_deletion.run()
