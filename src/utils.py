@@ -28,7 +28,7 @@ def edge_index_transformation(data):
     return edges
 
 
-def build_grb_dataset(poisoned_adj, poisoned_x, dataset):
+def build_grb_dataset(poisoned_adj, poisoned_x, dataset):   
     num_nodes_added = poisoned_adj.shape[0] - dataset.adj.shape[0]
     new_labels = torch.zeros(num_nodes_added)
     poisoned_labels = torch.hstack((dataset.labels, new_labels))

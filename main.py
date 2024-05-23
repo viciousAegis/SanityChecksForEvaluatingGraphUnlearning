@@ -68,4 +68,26 @@ if __name__ == "__main__":
         "scale":50,
     }
 
-    get_unlearn_method("gif", args=args_dict2, model=poison_trained_model, data=poisoned_data)
+    args_gnndelete = {
+        'model': 'gcn',
+        'hidden_features': 128,
+        'dataset': 'cora',
+        'epochs': 10,
+        'valid_freq': 100,
+        'checkpoint_dir': './checkpoint',
+        'alpha': 0.5,
+        'neg_sample_random': 'non_connected',
+        'loss_fct': 'mse_mean',
+        'loss_type': 'both_layerwise',
+        'in_dim': 128,
+        'out_dim': 64,
+        'random_seed': 42,
+        'batch_size': 8192,
+        'num_steps': 32,
+        'eval_on_cpu': False,
+        'df': 'none',
+        'df_size': 0.5,
+
+    }
+
+    get_unlearn_method("gnndelete", args=args_gnndelete, model=poison_trained_model, data=poisoned_data)
