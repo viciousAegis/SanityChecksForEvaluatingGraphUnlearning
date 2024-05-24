@@ -69,9 +69,9 @@ if __name__ == "__main__":
     }
 
     args_gnndelete = {
-        'model': 'gcn',
+        'model': poison_trained_model,
         'hidden_features': 128,
-        'dataset': 'cora',
+        'dataset': poisoned_dataset,
         'epochs': 10,
         'valid_freq': 100,
         'checkpoint_dir': './checkpoint',
@@ -90,4 +90,4 @@ if __name__ == "__main__":
 
     }
 
-    get_unlearn_method("gnndelete", args=args_gnndelete, model=poison_trained_model, data=poisoned_data)
+    get_unlearn_method("gnndelete", args=args_gnndelete, model=poison_trained_model, poisoned_dataset=poisoned_dataset)

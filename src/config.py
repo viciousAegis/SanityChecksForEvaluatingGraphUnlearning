@@ -8,7 +8,7 @@ def load_args():
         type=str,
         default="fgsm",
         choices=["tdgia", "fgsm", "pgd", "rand", "speit"],
-        help="Attack type to test (default: tdgia)",
+        help="Attack type to test (default: fgsm)",
     ) 
     parser.add_argument(
         "--model",
