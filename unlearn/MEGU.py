@@ -1,4 +1,4 @@
-from unlearn.unlearn_utils import UnlearnMethod
+from unlearn.UnlearnMethod import UnlearnMethod
 
 import time
 import torch
@@ -87,7 +87,7 @@ def normalize_adj(adj, r=0.5):
 
 class MEGU(UnlearnMethod):
     def __init__(self, args, model, data):
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = "cpu"
         self.args = args
         self.target_model = model
         self.data = data

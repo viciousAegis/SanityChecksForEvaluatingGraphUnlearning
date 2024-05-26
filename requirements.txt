@@ -6,7 +6,7 @@ numpy==1.22.0
 pandas==1.1.1
 networkx==2.5
 scikit_learn==0.24.2
-torch==1.8.0
-cogdl~=0.3.0.post1
 torch
+cogdl~=0.3.0.post1
 torch_geometric
+wandb

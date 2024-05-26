@@ -1,8 +1,7 @@
 import argparse
 
-
 def load_args():
-    parser = argparse.ArgumentParser(description="GNN Attack Testing")
+    parser = argparse.ArgumentParser(description="GNN Unlearning on Injection Attack Testing")
     parser.add_argument(
         "--attack",
         type=str,
@@ -18,6 +17,12 @@ def load_args():
         help="Model to use (default: GCN)",
     )
     parser.add_argument(
+        "--load_model",
+        type=bool,
+        default=False,
+        help="Load model from previous training (default: False)",
+    )
+    parser.add_argument(
         "--lr",
         type=float,
         default=0.01,
@@ -26,7 +31,7 @@ def load_args():
     parser.add_argument(
         "--n_epoch",
         type=int,
-        default= 20, #200,
+        default= 200, #200,
         help="Number of epochs to train (default: 200)",
     )
     parser.add_argument(
@@ -42,8 +47,26 @@ def load_args():
         default=3,
         help="Number of layers in the model (default: 3)",
     )
+    parser.add_argument(
+        "--unlearn_method",
+        type=str,
+        default="megu",
+        choices=["megu", "gif"],
+        help="Unlearning method to test (default: megu)",
+    )
+    parser.add_argument(
+        "--unlearn_request",
+        type=str,
+        default="node",
+        choices=["node", "edge", "feature"],
+        help="Unlearning request type (default: node)",
+    )
 
     return parser.parse_args()
 
 
 args = load_args()
+args.experiment_name = f"{args.attack}_{args.model}_{args.unlearn_method}_{args.unlearn_request}"
+print("===========ARGS===========")
+print(args)
+print("==========================")

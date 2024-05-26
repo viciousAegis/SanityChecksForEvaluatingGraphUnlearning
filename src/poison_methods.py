@@ -21,7 +21,7 @@ def attack(model, dataset, attack_type="tdgia"):
     elif(attack_type == 'pgd'):
         attack = PGD(
             epsilon=0.3,
-            n_epoch=10,
+            n_epoch=100,
             n_inject_max=20,
             n_edge_max=20,
             feat_lim_min=-0.9,

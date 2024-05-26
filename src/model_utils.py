@@ -26,10 +26,10 @@ def build_model(model_name, in_features, out_features, hidden_features, n_layers
     )
 
 
-def train_model(dataset, model, lr=0.01, n_epoch=20): #200
+def train_model(dataset, model, lr=0.01, n_epoch=20, save_dir=None, save_name=None): #200
     adam = torch.optim.Adam(model.parameters(), lr=lr)
     trainer = Trainer(
         dataset=dataset, optimizer=adam, loss=torch.nn.functional.nll_loss
     )
-    trainer.train(model=model, n_epoch=n_epoch, train_mode="transductive")
+    trainer.train(model=model, n_epoch=n_epoch, train_mode="transductive", verbose=False, save_dir=save_dir, save_name=save_name)
     return model

@@ -2,6 +2,8 @@ data
 tmp_*/
 grb.*/
 
+models/
+
 .venv/
 venv/
 

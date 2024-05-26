@@ -1,4 +1,4 @@
-from unlearn.unlearn_utils import UnlearnMethod
+from unlearn.UnlearnMethod import UnlearnMethod
 import time
 import torch
 import copy
