@@ -8,8 +8,8 @@ def load_args():
         type=str,
         default="fgsm",
         choices=["tdgia", "fgsm", "pgd", "rand", "speit"],
-        help="Attack type to test (default: tdgia)",
-    )  # toAdd: rand, speit ?
+        help="Attack type to test (default: fgsm)",
+    ) 
     parser.add_argument(
         "--model",
         type=str,
@@ -42,6 +42,7 @@ def load_args():
         default=3,
         help="Number of layers in the model (default: 3)",
     )
+
     return parser.parse_args()
 
 
