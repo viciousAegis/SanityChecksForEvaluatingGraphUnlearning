@@ -12,7 +12,7 @@ def make_geometric_data(poisoned_adj, poisoned_x, dataset):
     poisoned_features = torch.vstack((dataset.features, poisoned_x))
     
     # extend train_mask, val_mask, test_mask
-    train_mask = torch.hstack((dataset.train_mask, torch.zeros(num_nodes_added, dtype=torch.bool)))
+    train_mask = torch.hstack((dataset.train_mask, torch.ones(num_nodes_added, dtype=torch.bool)))
     val_mask = torch.hstack((dataset.val_mask, torch.zeros(num_nodes_added, dtype=torch.bool)))
     test_mask = torch.hstack((dataset.test_mask, torch.zeros(num_nodes_added, dtype=torch.bool)))
     
@@ -38,13 +38,19 @@ def edge_index_transformation(data):
 def build_grb_dataset(poisoned_adj, poisoned_x, dataset: Dataset):   
     num_nodes_added = poisoned_adj.shape[0] - dataset.adj.shape[0]
     new_labels = torch.zeros(num_nodes_added)
+    # make random labels for the new nodes between 0 and num_classes
+    # new_labels = torch.randint(0, dataset.num_classes, (num_nodes_added,))
     poisoned_labels = torch.hstack((dataset.labels, new_labels))
     poisoned_features = torch.vstack((dataset.features, poisoned_x))
     
     # extend train_mask, val_mask, test_mask
-    train_mask = torch.hstack((dataset.train_mask, torch.zeros(num_nodes_added, dtype=torch.bool)))
+    print(dataset.train_mask.shape)
+    train_mask = torch.hstack((dataset.train_mask, torch.ones(num_nodes_added, dtype=torch.bool)))
     val_mask = torch.hstack((dataset.val_mask, torch.zeros(num_nodes_added, dtype=torch.bool)))
     test_mask = torch.hstack((dataset.test_mask, torch.zeros(num_nodes_added, dtype=torch.bool)))
+    print(train_mask.shape)
+    print(train_mask[-num_nodes_added:])
+    # make sure that the last num_nodes_added nodes are true in the train_mask
 
     dataset = CustomDataset(
         adj=poisoned_adj,

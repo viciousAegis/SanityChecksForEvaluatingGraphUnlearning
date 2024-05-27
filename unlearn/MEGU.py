@@ -401,7 +401,7 @@ class MEGU(UnlearnMethod):
                 )
 
             loss = self.args.kappa * loss_u + loss_r
-            print(f"Val Loss: {loss}")
+            # print(f"Val Loss: {loss}")
             loss.backward()
             optimizer.step()
 
@@ -421,7 +421,6 @@ class MEGU(UnlearnMethod):
         if self.args.dataset_name == "ppi":
             test_f1 = calc_f1(y, y_hat, self.data.test_mask, multilabel=True)
         else:
-            print("HERREEE")
             print(self.data.test_mask)
             print(self.data.test_mask.shape)
             print(sum(self.data.test_mask))

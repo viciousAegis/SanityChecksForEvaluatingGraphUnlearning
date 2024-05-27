@@ -10,6 +10,12 @@ def load_args():
         help="Attack type to test (default: fgsm)",
     )
     parser.add_argument(
+        "--dataset_name",
+        type=str,
+        default= "cora",
+        help="Dataset to use (default: cora)",
+    )
+    parser.add_argument(
         "--model",
         type=str,
         default="GCN",
@@ -135,13 +141,6 @@ def load_args():
         default= 0.2,
         help="Test ratio for MEGU (default: 0.2)",
     )
-    parser.add_argument(
-        "--dataset_name",
-        type=str,
-        default= "citeseer",
-        help="Test ratio for MEGU (default: 0.2)",
-    )
-
 
     #GIF Arguments
     parser.add_argument(
