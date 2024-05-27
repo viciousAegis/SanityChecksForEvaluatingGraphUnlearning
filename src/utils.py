@@ -44,13 +44,9 @@ def build_grb_dataset(poisoned_adj, poisoned_x, dataset: Dataset):
     poisoned_features = torch.vstack((dataset.features, poisoned_x))
     
     # extend train_mask, val_mask, test_mask
-    print(dataset.train_mask.shape)
     train_mask = torch.hstack((dataset.train_mask, torch.ones(num_nodes_added, dtype=torch.bool)))
     val_mask = torch.hstack((dataset.val_mask, torch.zeros(num_nodes_added, dtype=torch.bool)))
     test_mask = torch.hstack((dataset.test_mask, torch.zeros(num_nodes_added, dtype=torch.bool)))
-    print(train_mask.shape)
-    print(train_mask[-num_nodes_added:])
-    # make sure that the last num_nodes_added nodes are true in the train_mask
 
     dataset = CustomDataset(
         adj=poisoned_adj,

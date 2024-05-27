@@ -95,7 +95,7 @@ class MEGU(UnlearnMethod):
         self.num_layers = 2
 
     def unlearn(self):
-        self.train_test_split()
+        # self.train_test_split()
         self.unlearning_request()
         self.adj = sparse_mx_to_torch_sparse_tensor(
             normalize_adj(to_scipy_sparse_matrix(self.data.edge_index))
@@ -126,13 +126,12 @@ class MEGU(UnlearnMethod):
         f1_score_unlearning_std = ".".join(
             (f1_score_unlearning_std[1:2], f1_score_unlearning_std[2:4])
         )
-        print(
-            f"|Unlearn| f1_score: avg±std={f1_score_unlearning_avg}±{f1_score_unlearning_std} time: avg={np.average(unlearning_times):.4f}s"
-        )
+        # print(
+        #     f"|Unlearn| f1_score: avg±std={f1_score_unlearning_avg}±{f1_score_unlearning_std} time: avg={np.average(unlearning_times):.4f}s"
+        # )
         return self.target_model
 
     def train_test_split(self):
-        print(self.args)
         self.train_indices, self.test_indices = train_test_split(
             np.arange(self.data.num_nodes),
             test_size=self.args.megu_test_ratio,
@@ -214,9 +213,9 @@ class MEGU(UnlearnMethod):
         )
         sort_indices = np.argsort(unique_encode_not)
 
-        print(f"sort_indices: {sort_indices}")
-        print(f"unique_encode_not: {unique_encode_not}")
-        print(f"remain_encode: {remain_encode}")
+        # print(f"sort_indices: {sort_indices}")
+        # print(f"unique_encode_not: {unique_encode_not}")
+        # print(f"remain_encode: {remain_encode}")
 
         indices_to_check = np.searchsorted(
             unique_encode_not, remain_encode, sorter=sort_indices
@@ -421,9 +420,9 @@ class MEGU(UnlearnMethod):
         if self.args.dataset_name == "ppi":
             test_f1 = calc_f1(y, y_hat, self.data.test_mask, multilabel=True)
         else:
-            print(self.data.test_mask)
-            print(self.data.test_mask.shape)
-            print(sum(self.data.test_mask))
+            # print(self.data.test_mask)
+            # print(self.data.test_mask.shape)
+            # print(sum(self.data.test_mask))
             test_f1 = calc_f1(y, y_hat, self.data.test_mask)
 
         return unlearn_time, test_f1

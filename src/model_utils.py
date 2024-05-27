@@ -32,6 +32,13 @@ def train_model(dataset, model, lr=0.01, n_epoch=200, save_dir=None, save_name=N
         dataset=dataset, optimizer=adam, loss=torch.nn.functional.nll_loss
     )
     trainer.train(model=model, n_epoch=n_epoch, train_mode="transductive", verbose=False, save_dir=save_dir, save_name=save_name)
-    test_score = trainer.evaluate(model, dataset.test_mask)
-    print("Test score of model: {:.4f}".format(test_score))
     return model
+
+def test_model(model, dataset):
+    adam = torch.optim.Adam(model.parameters(), lr=0.01)
+    trainer = Trainer(
+        dataset=dataset, optimizer=adam, loss=torch.nn.functional.nll_loss
+    )
+    test_score = trainer.evaluate(model, dataset.test_mask)
+    print("Test accuracy of model: {:.4f}".format(test_score))
+    return test_score

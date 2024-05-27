@@ -1,0 +1,5 @@
+method: grid  # or 'random', 'bayes'
+metric:
+  name: unlearnt_acc  # primary metric for optimization
+  goal: maximise
+parameters:

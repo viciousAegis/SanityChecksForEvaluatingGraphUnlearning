@@ -4,6 +4,8 @@ grb.*/
 
 models/
 
+wandb/
+
 .venv/
 venv/
 
