@@ -98,7 +98,7 @@ if __name__ == "__main__":
         'df_size': 0.5,
     }
 
-    method = get_unlearn_method("megu", model=poison_trained_model, data=poisoned_data)
+    method = get_unlearn_method("gif", model=poison_trained_model, data=poisoned_data)
     method.set_unlearn_request(args.unlearn_request)
     method.set_nodes_to_unlearn(poisoned_data)
     method.unlearn()
