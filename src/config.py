@@ -56,7 +56,7 @@ def load_args():
     parser.add_argument(
         "--unlearn_method",
         type=str,
-        default="megu",
+        default="gif",
         choices=["megu", "gif"],
         help="Unlearning method to test (default: megu)",
     )
@@ -94,7 +94,7 @@ def load_args():
     parser.add_argument(
         "--n_edge_max",
         type=int,
-        default= 100,
+        default= 200,
         help="Max degree of injected nodes in attack (default: 100)",
     )
 
