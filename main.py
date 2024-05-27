@@ -17,8 +17,8 @@ if __name__ == "__main__":
     else:
         model = train_model(
             dataset=dataset,
-            lr=args.lr,
-            n_epoch=args.n_epoch,
+            lr=args.lr_optimizer,
+            n_epoch=args.n_epoch_train,
             model=build_model(
                 model_name=args.model,
                 in_features=dataset.num_features,
@@ -46,8 +46,8 @@ if __name__ == "__main__":
         #Model is trained on the poisoned data
         poison_trained_model = train_model(
             dataset=poisoned_dataset,
-            lr=args.lr,
-            n_epoch=args.n_epoch,
+            lr=args.lr_optimizer,
+            n_epoch=args.n_epoch_train,
             model=build_model(
                 model_name=args.model,
                 in_features=dataset.num_features,
