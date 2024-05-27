@@ -36,7 +36,7 @@ class ExpGraphInfluenceFunction():
         unlearning_times = np.empty((0))
         training_times = np.empty((0))
 
-        for run in range(self.args['num_runs']):
+        for run in range(self.args.gif_num_runs):
             run_training_time, result_tuple = self._train_model(run)
             # f1_score = self.evaluate(run)
             run_f1 = np.append(run_f1, f1_score)
@@ -57,7 +57,7 @@ class ExpGraphInfluenceFunction():
 
 
     def train_test_split(self):
-        self.train_indices, self.test_indices = train_test_split(np.arange((self.data.num_nodes)), test_size=self.args['test_ratio'], random_state=100)
+        self.train_indices, self.test_indices = train_test_split(np.arange((self.data.num_nodes)), test_size=self.args.gif_test_ratio, random_state=100)
         self.data.train_mask = torch.from_numpy(np.isin(np.arange(self.data.num_nodes), self.train_indices))
         self.data.test_mask = torch.from_numpy(np.isin(np.arange(self.data.num_nodes), self.test_indices))
 
@@ -169,7 +169,7 @@ class ExpGraphInfluenceFunction():
 
     def gif_approxi(self, res_tuple):
         start_time = time.time()
-        iteration, damp, scale = self.args['iteration'], self.args['damp'], self.args['scale']
+        iteration, damp, scale = self.args.iteration, self.args.damp, self.args.scale
         v = tuple(grad1 - grad2 for grad1, grad2 in zip(res_tuple[1], res_tuple[2]))
         h_estimate = tuple(grad1 - grad2 for grad1, grad2 in zip(res_tuple[1], res_tuple[2]))
         for _ in range(iteration):

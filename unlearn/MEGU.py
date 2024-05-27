@@ -1,5 +1,6 @@
 from unlearn.UnlearnMethod import UnlearnMethod
 
+import os
 import time
 import torch
 import torch.nn as nn
@@ -12,7 +13,7 @@ import numpy as np
 from torch_geometric.utils import k_hop_subgraph, to_scipy_sparse_matrix
 import scipy.sparse as sp
 from sklearn.metrics import f1_score
-
+from src.config import args
 
 class GATE(torch.nn.Module):
     def __init__(self, dim):
@@ -86,7 +87,7 @@ def normalize_adj(adj, r=0.5):
 
 
 class MEGU(UnlearnMethod):
-    def __init__(self, args, model, data):
+    def __init__(self, model, data):
         self.device = "cpu"
         self.args = args
         self.target_model = model
@@ -98,14 +99,15 @@ class MEGU(UnlearnMethod):
             normalize_adj(to_scipy_sparse_matrix(self.data.edge_index))
         )
         self.neighbor_khop = self.neighbor_select(self.data.x)
+        self.unlearn_request= self.set_unlearn_request(self.args.unlearn_request)
 
+    def unlearn(self):
         run_f1 = np.empty(0)
         run_f1_unlearning = np.empty(0)
         unlearning_times = np.empty(0)
         training_times = np.empty(0)
 
-        for run in range(self.args["num_runs"]):
-            # self.logger.info("Run %d" % run)
+        for run in range(self.args.megu_num_runs):
             f1_score = self.evaluate(run)
             run_f1 = np.append(run_f1, f1_score)
 
@@ -113,11 +115,6 @@ class MEGU(UnlearnMethod):
             unlearning_time, f1_score_unlearning = self.megu_training()
             unlearning_times = np.append(unlearning_times, unlearning_time)
             run_f1_unlearning = np.append(run_f1_unlearning, f1_score_unlearning)
-
-        # f1_score_avg = np.average(run_f1)
-        # f1_score_std = np.std(run_f1)
-        # self.logger.info(f"f1_score: avg={f1_score_avg:.4f}, std={f1_score_std:.4f}")
-        # self.logger.info(f"model training time: avg={np.average(training_times):.4f} seconds")
 
         f1_score_unlearning_avg = str(np.average(run_f1_unlearning)).split(".")[1]
         f1_score_unlearning_std = str(np.std(run_f1_unlearning)).split(".")[1]
@@ -132,11 +129,16 @@ class MEGU(UnlearnMethod):
         print(
             f"|Unlearn| f1_score: avg±std={f1_score_unlearning_avg}±{f1_score_unlearning_std} time: avg={np.average(unlearning_times):.4f}s"
         )
+        return self.target_model
+
+    def save_unlearned_model(self, save_dir, save_name):
+        torch.save(self.target_model, os.path.join(save_dir, save_name))
 
     def train_test_split(self):
+        print(self.args)
         self.train_indices, self.test_indices = train_test_split(
             np.arange(self.data.num_nodes),
-            test_size=self.args["test_ratio"],
+            test_size=self.args.megu_test_ratio,
             random_state=100,
         )
 
@@ -156,7 +158,7 @@ class MEGU(UnlearnMethod):
         edge_index = self.data.edge_index.numpy()
         unique_indices = np.where(edge_index[0] < edge_index[1])[0]
 
-        if self.args["unlearn_task"] == "node":
+        if self.unlearn_request == "node":
             # unique_nodes = np.random.choice(
             #     len(self.train_indices),
             #     int(len(self.train_indices) * self.args["unlearn_ratio"]),
@@ -194,7 +196,7 @@ class MEGU(UnlearnMethod):
         unique_indices = np.where(edge_index[0] < edge_index[1])[0]
         unique_indices_not = np.where(edge_index[0] > edge_index[1])[0]
 
-        if self.args["unlearn_task"] == "edge":
+        if self.unlearn_request == "edge":
             remain_indices = np.setdiff1d(unique_indices, delete_edge_index)
         else:
             unique_edge_index = edge_index[:, unique_indices]
@@ -245,7 +247,7 @@ class MEGU(UnlearnMethod):
             self.data.x, get_adj_mat(self.data.edge_index, self.data.num_nodes)
         )
         y = self.data.y.cpu()
-        if self.args["dataset_name"] == "ppi":
+        if self.args.dataset_name == "ppi":
             y_hat = torch.sigmoid(out).cpu().detach().numpy()
             test_f1 = calc_f1(y, y_hat, self.data.test_mask, multilabel=True)
         else:
@@ -316,9 +318,9 @@ class MEGU(UnlearnMethod):
     def correct_and_smooth(self, y_soft, preds):
         pos = CorrectAndSmooth(
             num_correction_layers=80,
-            correction_alpha=self.args["alpha1"],
+            correction_alpha=self.args.alpha1,
             num_smoothing_layers=80,
-            smoothing_alpha=self.args["alpha2"],
+            smoothing_alpha=self.args.alpha2,
             autoscale=False,
             scale=1.0,
         )
@@ -346,7 +348,7 @@ class MEGU(UnlearnMethod):
                 {"params": self.target_model.parameters()},
                 {"params": operator.parameters()},
             ],
-            lr=self.args["unlearn_lr"],
+            lr=self.args.megu_unlearn_lr,
         )
 
         with torch.no_grad():
@@ -354,14 +356,14 @@ class MEGU(UnlearnMethod):
             preds = self.target_model(
                 self.data.x, get_adj_mat(self.data.edge_index, self.data.num_nodes)
             )
-            if self.args["dataset_name"] == "ppi":
+            if self.args.dataset_name == "ppi":
                 preds = torch.sigmoid(preds).ge(0.5)
                 preds = preds.type_as(self.data.y)
             else:
                 preds = torch.argmax(preds, axis=1).type_as(self.data.y)
 
         start_time = time.time()
-        for epoch in range(self.args["num_epochs"]):
+        for epoch in range(self.args.megu_num_epochs):
             self.target_model.train()
             operator.train()
             optimizer.zero_grad()
@@ -376,7 +378,7 @@ class MEGU(UnlearnMethod):
             )
             out = operator(out_ori)
 
-            if self.args["dataset_name"] == "ppi":
+            if self.args.dataset_name == "ppi":
                 loss_u = criterionKD(
                     out_ori[self.temp_node], out[self.temp_node]
                 ) - F.binary_cross_entropy_with_logits(
@@ -401,7 +403,7 @@ class MEGU(UnlearnMethod):
                     preds[self.neighbor_khop].type(torch.LongTensor),
                 )
 
-            loss = self.args["kappa"] * loss_u + loss_r
+            loss = self.args.kappa * loss_u + loss_r
             print(f"Val Loss: {loss}")
             loss.backward()
             optimizer.step()
@@ -412,14 +414,14 @@ class MEGU(UnlearnMethod):
             self.data.x_unlearn,
             get_adj_mat(self.data.edge_index_unlearn, self.data.num_nodes),
         )
-        if self.args["dataset_name"] == "ppi":
+        if self.args.dataset_name == "ppi":
             out = torch.sigmoid(test_out)
         else:
             out = self.correct_and_smooth(F.softmax(test_out, dim=-1), preds)
 
         y_hat = out.cpu().detach().numpy()
         y = self.data.y.cpu()
-        if self.args["dataset_name"] == "ppi":
+        if self.args.dataset_name == "ppi":
             test_f1 = calc_f1(y, y_hat, self.data.test_mask, multilabel=True)
         else:
             print("HERREEE")

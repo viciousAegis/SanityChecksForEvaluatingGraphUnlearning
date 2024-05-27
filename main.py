@@ -10,7 +10,7 @@ if __name__ == "__main__":
     print("===========Dataset==========")
     dataset = load_dataset()
     print("=====================")
-    
+
     print("===========Base Model Training==========")
     if args.load_model:
         model = torch.load(f"./models/{args.experiment_name}/{args.experiment_name}_base")
@@ -37,8 +37,8 @@ if __name__ == "__main__":
     )  # attack returns the poisoned adj and features
     poisoned_dataset = build_grb_dataset(poisoned_adj, poisoned_x, dataset)
     print("=====================")
-    
-    
+
+
     print("===========Poisoned Model Training==========")
     if args.load_model:
         poison_trained_model = torch.load(f"./models/{args.experiment_name}/{args.experiment_name}_poisoned")
@@ -59,50 +59,23 @@ if __name__ == "__main__":
             save_name=f"{args.experiment_name}_poisoned",
         )
     print("=====================")
-    
+
     print("===========Unlearning==========")
     #Data into geometric
     poisoned_data = make_geometric_data(poisoned_adj, poisoned_x, dataset)
-    
+
     """
     INTENDED IMPLEMENTATION
-    
+
     method = get_unlearn_method(name=args.unlearn_method, kwargs=kwargs) // only runs method.__init__(**kwargs)
     method.set_unlearn_request(args.unlearn_request)
     method.set_nodes_to_unlearn(poisoned_set)
     method.unlearn()
     """
-    
+
     """
     PLEASE REFACTOR THE BELOW INTO THE ABOVE
     """
-
-    args_dict = {
-        "is_vary": False,
-        "cuda": 0,
-        "num_threads": 1,
-        "inductive": "normal",
-        "unlearn_task": "node",
-        "dataset_name":"citeseer",
-        "is_split": True,
-        "test_ratio": 0.2,
-        "num_epochs": 100,
-        "num_runs": 2,
-        "batch_size": 2048,
-        "test_batch_size": 2048,
-        "unlearn_lr": 1e-4,
-        "kappa": 0.01,
-        "alpha1": 0.8,
-        "alpha2": 0.5,
-    }
-    
-    args_dict2={
-        "test_ratio": 0.2,
-        "num_runs": 2,
-        "iteration":5,
-        "damp":0.0,
-        "scale":50,
-    }
 
     args_gnndelete = {
         'model': poison_trained_model,
@@ -123,7 +96,6 @@ if __name__ == "__main__":
         'eval_on_cpu': False,
         'df': 'none',
         'df_size': 0.5,
-
     }
 
-    get_unlearn_method("megu", args=args_dict, model=poison_trained_model, data=poisoned_data)
+    get_unlearn_method("megu", model=poison_trained_model, data=poisoned_data)
