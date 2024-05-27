@@ -2,8 +2,6 @@ data
 tmp_*/
 grb.*/
 
-models/
-
 wandb/
 
 .venv/

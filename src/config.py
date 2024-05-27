@@ -12,7 +12,7 @@ def load_args():
     parser.add_argument(
         "--test_split",
         type=str,
-        default="hard",
+        default="easy",
         choices=["easy", "medium", "hard", "full"],
         help="Test split to use",
     )
@@ -38,12 +38,6 @@ def load_args():
         default="GCN",
         choices=["GCN", "GIN", "GraphSAGE", "MLP"],
         help="Model to use",
-    )
-    parser.add_argument(
-        "--load_model",
-        type=bool,
-        default=False,
-        help="Load model from previous training",
     )
     parser.add_argument(
         "--lr_optimizer",
@@ -107,13 +101,13 @@ def load_args():
     parser.add_argument(
         "--n_inject_max",
         type=int,
-        default= 10,
+        default= 32,
         help="Max number of nodes to be injected in attack",
     )
     parser.add_argument(
         "--n_edge_max",
         type=int,
-        default= 20,
+        default= 64,
         help="Max degree of injected nodes in attack",
     )
 
@@ -197,6 +191,7 @@ def load_args():
 
 
 args = load_args()
+args.poison_model_name = f"{args.attack}_{args.model}"
 args.experiment_name = f"{args.attack}_{args.model}_{args.unlearn_method}_{args.unlearn_request}"
 print("===========ARGS===========")
 print(args)

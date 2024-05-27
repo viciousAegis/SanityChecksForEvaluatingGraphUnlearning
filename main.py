@@ -7,6 +7,12 @@ from src.unlearn_methods import get_unlearn_method
 from src.utils import build_grb_dataset, make_geometric_data
 import wandb
 
+seed = 1235
+torch.manual_seed(seed)
+torch.cuda.manual_seed(seed)
+gen = torch.Generator()
+gen.manual_seed(seed)
+
 if __name__ == "__main__":
     if args.wandb:
         wandb.init(project="corr_graph_unlearn", name=args.experiment_name)
@@ -18,10 +24,12 @@ if __name__ == "__main__":
     dataset = load_dataset(dataset_name=args.dataset_name, mode=args.test_split)
     print(dataset)
 
-    print("===========Base Model Training==========")
-    if args.load_model:
-        model = torch.load(f"./models/{args.experiment_name}/{args.experiment_name}_base")
-    else:
+    print("===========Base Model Loading==========")
+
+    try:
+        model = torch.load(f"./models/base_model/final_{args.model}_base.pt")
+    except:
+        print("no loaded base model found, training new model")
         model = train_model(
             dataset=dataset,
             lr=args.lr_optimizer,
@@ -33,8 +41,8 @@ if __name__ == "__main__":
                 hidden_features=[64, 64],
                 n_layers=3,
             ),
-            save_dir=f"./models/{args.experiment_name}",
-            save_name=f"{args.experiment_name}_base",
+            save_dir=f"./models/base_model",
+            save_name=f"{args.model}_base",
         )
     
     acc = test_model(model, dataset)
@@ -50,10 +58,11 @@ if __name__ == "__main__":
     poisoned_dataset = build_grb_dataset(poisoned_adj, poisoned_x, dataset)
 
 
-    print("===========Poisoned Model Training==========")
-    if args.load_model:
-        poison_trained_model = torch.load(f"./models/{args.experiment_name}/{args.experiment_name}_poisoned")
-    else:
+    print("===========Poisoned Model Loading==========")
+    try:
+        poison_trained_model = torch.load(f"./models/{args.poison_model_name}/final_{args.poison_model_name}_poisoned.pt")
+    except:
+        print(f"no loaded model found for {args.attack}, training new model")
         #Model is trained on the poisoned data
         poison_trained_model = train_model(
             dataset=poisoned_dataset,
@@ -66,14 +75,16 @@ if __name__ == "__main__":
                 hidden_features=[64, 64],
                 n_layers=3,
             ),
-            save_dir=f"./models/{args.experiment_name}",
-            save_name=f"{args.experiment_name}_poisoned",
+            save_dir=f"./models/{args.poison_model_name}",
+            save_name=f"{args.poison_model_name}_poisoned",
         )
         
     acc = test_model(poison_trained_model, poisoned_dataset)
     
     if args.wandb:
         wandb.log({"Poisoned Model Test Accuracy": acc})
+
+    exit()
 
     print("===========Unlearning==========")
     #Data into geometric
@@ -112,11 +123,12 @@ if __name__ == "__main__":
         'df': 'none',
         'df_size': 0.5,
     }
-
+    
     method = get_unlearn_method(args.unlearn_method, model=poison_trained_model, data=poisoned_data)
     method.set_unlearn_request(args.unlearn_request)
     method.set_nodes_to_unlearn(poisoned_data)
     unlearned_model = method.unlearn()
+    method.save_unlearned_model()
     
     acc = test_model(unlearned_model, poisoned_dataset)
 
