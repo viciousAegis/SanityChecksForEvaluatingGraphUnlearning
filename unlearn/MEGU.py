@@ -92,16 +92,16 @@ class MEGU(UnlearnMethod):
         self.args = args
         self.target_model = model
         self.data = data
+        self.num_layers = 2
+
+    def unlearn(self):
         self.train_test_split()
         self.unlearning_request()
-        self.num_layers = 2
         self.adj = sparse_mx_to_torch_sparse_tensor(
             normalize_adj(to_scipy_sparse_matrix(self.data.edge_index))
         )
         self.neighbor_khop = self.neighbor_select(self.data.x)
-        self.unlearn_request= self.set_unlearn_request(self.args.unlearn_request)
 
-    def unlearn(self):
         run_f1 = np.empty(0)
         run_f1_unlearning = np.empty(0)
         unlearning_times = np.empty(0)
@@ -130,9 +130,6 @@ class MEGU(UnlearnMethod):
             f"|Unlearn| f1_score: avg±std={f1_score_unlearning_avg}±{f1_score_unlearning_std} time: avg={np.average(unlearning_times):.4f}s"
         )
         return self.target_model
-
-    def save_unlearned_model(self, save_dir, save_name):
-        torch.save(self.target_model, os.path.join(save_dir, save_name))
 
     def train_test_split(self):
         print(self.args)
@@ -164,7 +161,7 @@ class MEGU(UnlearnMethod):
             #     int(len(self.train_indices) * self.args["unlearn_ratio"]),
             #     replace=False,
             # )
-            unique_nodes= self.data.deletion_indices
+            unique_nodes= self.nodes_to_unlearn
             self.data.edge_index_unlearn = self.update_edge_index_unlearn(unique_nodes)
 
         # if self.args["unlearn_task"] == "edge":
