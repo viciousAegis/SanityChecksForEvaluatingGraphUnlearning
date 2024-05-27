@@ -9,7 +9,7 @@ import wandb
 
 if __name__ == "__main__":
     if args.wandb:
-        wandb.init(project="grb", name=args.experiment_name)
+        wandb.init(project="corr_graph_unlearn", name=args.experiment_name)
         
         config = wandb.config
         config.update(args)
