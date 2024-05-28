@@ -17,9 +17,11 @@ from torch_geometric.datasets import Planetoid
 from torch_geometric.data import NeighborSampler
 from torch_geometric.nn.conv.gcn_conv import gcn_norm
 import numpy as np
+from src.model_utils import test_model
+from src.config import args
 
 class ExpGraphInfluenceFunction():
-    def __init__(self, model, data, args):
+    def __init__(self, model, data):
         self.deleted_nodes = np.array([])
         self.feature_nodes = np.array([])
         self.influence_nodes = np.array([])
@@ -37,6 +39,9 @@ class ExpGraphInfluenceFunction():
         unlearning_times = np.empty((0))
         training_times = np.empty((0))
 
+        self.best_model= self.target_model
+        best_score= test_model(self.target_model, self.data)
+
         for run in range(self.args.gif_num_runs):
             run_training_time, result_tuple = self._train_model(run)
             # f1_score = self.evaluate(run)
@@ -48,8 +53,14 @@ class ExpGraphInfluenceFunction():
             unlearning_times = np.append(unlearning_times, unlearning_time)
             run_f1_unlearning = np.append(run_f1_unlearning, f1_score_unlearning)
 
+            #saving best model
+            test_score= test_model(self.target_model, self.data)
+            if(test_score>=best_score):
+                best_score= test_score
+                self.best_model= self.target_model
+
         return self.target_model
-    
+
         # f1_score_avg = np.average(run_f1)
         # f1_score_std = np.std(run_f1)
 

@@ -14,6 +14,7 @@ from torch_geometric.utils import k_hop_subgraph, to_scipy_sparse_matrix
 import scipy.sparse as sp
 from sklearn.metrics import f1_score
 from src.config import args
+from src.model_utils import test_model
 
 class GATE(torch.nn.Module):
     def __init__(self, dim):
@@ -107,6 +108,9 @@ class MEGU(UnlearnMethod):
         unlearning_times = np.empty(0)
         training_times = np.empty(0)
 
+        self.best_model= self.target_model
+        best_score= test_model(self.target_model, self.data)
+
         for run in range(self.args.megu_num_runs):
             f1_score = self.evaluate(run)
             run_f1 = np.append(run_f1, f1_score)
@@ -115,6 +119,13 @@ class MEGU(UnlearnMethod):
             unlearning_time, f1_score_unlearning = self.megu_training()
             unlearning_times = np.append(unlearning_times, unlearning_time)
             run_f1_unlearning = np.append(run_f1_unlearning, f1_score_unlearning)
+
+            #saving best model
+            test_score= test_model(self.target_model, self.data)
+            if(test_score>=best_score):
+                best_score= test_score
+                self.best_model= self.target_model
+
 
         f1_score_unlearning_avg = str(np.average(run_f1_unlearning)).split(".")[1]
         f1_score_unlearning_std = str(np.std(run_f1_unlearning)).split(".")[1]
