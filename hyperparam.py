@@ -1,4 +1,4 @@
-import subprocess
+import os
 
 if __name__=="__main__":
     attacks = ["tdgia", "fgsm", "pgd", "rand", "speit"]
@@ -16,6 +16,5 @@ if __name__=="__main__":
                     for lr in unlearn_lr:
                         
                         print(f"Attack {attack} with kappa={k}, alpha1={a1}, alpha2={a2}, lr={lr}")
-
-                        subprocess.run(["python", "main.py", "--attack", attack, "--wandb", "--unlearn_method", "megu", "--kappa", str(k), "--alpha1", str(a1), "--alpha2", str(a2), "--megu_unlearn_lr", str(lr)])
-                        print(f"Attack {attack} completed")
+                        
+                        os.system(f"python main.py --attack {attack} --wandb --unlearn_method megu --kappa {k} --alpha1 {a1} --alpha2 {a2} --megu_unlearn_lr {lr}")

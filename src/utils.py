@@ -52,7 +52,6 @@ def build_grb_dataset(poisoned_adj, poisoned_x, dataset: Dataset):
         adj=poisoned_adj,
         features=poisoned_features,
         labels=poisoned_labels,
-        name=dataset.name,
         train_mask=train_mask,
         val_mask=val_mask,
         test_mask=test_mask,

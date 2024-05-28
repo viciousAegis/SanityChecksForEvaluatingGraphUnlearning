@@ -6,6 +6,8 @@ from src.model_utils import train_model, build_model, test_model
 from src.unlearn_methods import get_unlearn_method
 from src.utils import build_grb_dataset, make_geometric_data
 import wandb
+import os
+from time import time
 
 seed = 1235
 torch.manual_seed(seed)
@@ -54,10 +56,18 @@ if __name__ == "__main__":
         wandb.log({"Base Model Test Accuracy": acc})
 
 
-    print("===========Injection Attack==========")
-    poisoned_adj, poisoned_x = attack(
-        model, dataset, attack_type=args.attack
-    )  # attack returns the poisoned adj and features
+    try:
+        poisoned_adj = torch.load(f"./attack_result_data/{args.attack}_poisoned_adj.pt")
+        poisoned_x = torch.load(f"./attack_result_data/{args.attack}_poisoned_x.pt")
+    except:
+        print("===========Injection Attack==========")
+        poisoned_adj, poisoned_x = attack(
+            model, dataset, attack_type=args.attack
+        )  # attack returns the poisoned adj and features
+
+        torch.save(poisoned_adj, f"./attack_result_data/{args.attack}_poisoned_adj.pt")
+        torch.save(poisoned_x, f"./attack_result_data/{args.attack}_poisoned_x.pt")
+        
     poisoned_dataset = build_grb_dataset(poisoned_adj, poisoned_x, dataset)
 
 
@@ -86,8 +96,6 @@ if __name__ == "__main__":
 
     if args.wandb:
         wandb.log({"Poisoned Model Test Accuracy": acc})
-
-    # exit()
 
     print("===========Unlearning==========")
     #Data into geometric
@@ -132,9 +140,16 @@ if __name__ == "__main__":
     method.set_nodes_to_unlearn(poisoned_data)
     unlearned_model = method.unlearn()
 
-    save_dir=f"./models/{args.poison_model_name}"
-    save_name=f"{args.poison_model_name}_unlearned"
-    method.save_unlearned_model(save_dir, save_name)
+    
+    if args.wandb:
+        save_dir=f"./models/{args.poison_model_name}"
+        save_name=f"{args.experiment_name}_unlearned_{time()}.pt"
+        method.save_unlearned_model(save_dir, save_name)
+        artifact = wandb.Artifact(f"{args.experiment_name}_unlearned", type="model")
+        artifact.add_file(f"./models/{args.poison_model_name}/{save_name}")
+        wandb.log_artifact(artifact)
+        os.remove(f"./models/{args.poison_model_name}/{save_name}")
+        
 
     acc = test_model(unlearned_model, poisoned_dataset)
 
