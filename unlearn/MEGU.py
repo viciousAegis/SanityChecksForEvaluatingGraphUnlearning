@@ -16,6 +16,7 @@ from sklearn.metrics import f1_score
 from src.config import args
 from src.model_utils import test_model
 
+
 class GATE(torch.nn.Module):
     def __init__(self, dim):
         super().__init__()
@@ -120,7 +121,7 @@ class MEGU(UnlearnMethod):
             unlearning_times = np.append(unlearning_times, unlearning_time)
             run_f1_unlearning = np.append(run_f1_unlearning, f1_score_unlearning)
 
-            #saving best model
+            # saving best model
             # test_score= test_model(self.target_model, self.data)
             # if(test_score>=best_score):
             #     best_score= test_score
@@ -170,7 +171,7 @@ class MEGU(UnlearnMethod):
             #     int(len(self.train_indices) * self.args["unlearn_ratio"]),
             #     replace=False,
             # )
-            unique_nodes= self.nodes_to_unlearn
+            unique_nodes = self.nodes_to_unlearn
             self.data.edge_index_unlearn = self.update_edge_index_unlearn(unique_nodes)
 
         # if self.args["unlearn_task"] == "edge":

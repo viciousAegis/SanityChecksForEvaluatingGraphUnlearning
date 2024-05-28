@@ -36,356 +36,6 @@ def to_directed(edge_index):
     row, col = edge_index
     mask = row < col
     return torch.cat([row[mask], col[mask]], dim=0)
-'''
-This is the trainer from GNNDelete implementation. Currently, using trainer from grb.
-
-@torch.no_grad()
-def get_link_labels(pos_edge_index, neg_edge_index):
-    E = pos_edge_index.size(1) + neg_edge_index.size(1)
-    link_labels = torch.zeros(E, dtype=torch.float, device=pos_edge_index.device)
-    link_labels[:pos_edge_index.size(1)] = 1.
-    return link_labels
-
-class Trainer:
-    def __init__(self, args):
-        self.args = args
-        self.trainer_log = {
-            'unlearning_model': "gnndelete", 
-            'dataset': args['dataset, 
-            'log': []}
-        self.logit_all_pair = None
-        self.df_pos_edge = []
-
-        with open(os.path.join(self.args['checkpoint_dir'], 'training_args['json'), 'w') as f:
-            json.dump(vars(args), f)
-
-    def freeze_unused_weights(self, model, mask):
-        grad_mask = torch.zeros_like(mask)
-        grad_mask[mask] = 1
-
-        model.deletion1.deletion_weight.register_hook(lambda grad: grad.mul_(grad_mask))
-        model.deletion2.deletion_weight.register_hook(lambda grad: grad.mul_(grad_mask))
-    
-    @torch.no_grad()
-    def get_link_labels(self, pos_edge_index, neg_edge_index):
-        E = pos_edge_index.size(1) + neg_edge_index.size(1)
-        link_labels = torch.zeros(E, dtype=torch.float, device=pos_edge_index.device)
-        link_labels[:pos_edge_index.size(1)] = 1.
-        return link_labels
-
-    @torch.no_grad()
-    def get_embedding(self, model, data, on_cpu=False):
-        original_device = next(model.parameters()).device
-
-        if on_cpu:
-            model = model.cpu()
-            data = data.cpu()
-        
-        z = model(data.x, data.train_pos_edge_index[:, data.dtrain_mask])
-
-        model = model.to(original_device)
-
-        return z
-
-    def train(self, model, data, optimizer, args):
-        if 'cora' in ['Cora', 'PubMed', 'DBLP', 'CS']:
-            return self.train_fullbatch(model, data, optimizer, args)
-
-        if 'cora' in ['Physics']:
-            return self.train_minibatch(model, data, optimizer, args)
-
-        if 'ogbl' in 'cora':
-            return self.train_minibatch(model, data, optimizer, args)
-
-    def train_fullbatch(self, model, data, optimizer, args):
-        start_time = time.time()
-        best_valid_loss = 1000000
-
-        data = data.to(device)
-        for epoch in trange(args['epochs, desc='Epoch'):
-            model.train()
-
-            # Positive and negative sample
-            neg_edge_index = negative_sampling(
-                edge_index=data.train_pos_edge_index,
-                num_nodes=data.num_nodes,
-                num_neg_samples=data.dtrain_mask.sum())
-            
-            z = model(data.x, data.train_pos_edge_index)
-            # edge = torch.cat([train_pos_edge_index, neg_edge_index], dim=-1)
-            # logits = model.decode(z, edge[0], edge[1])
-            logits = model.decode(z, data.train_pos_edge_index, neg_edge_index)
-            label = get_link_labels(data.train_pos_edge_index, neg_edge_index)
-            loss = F.binary_cross_entropy_with_logits(logits, label)
-
-            loss.backward()
-            # torch.nn.utils.clip_grad_norm_(model.parameters(), 1)
-            optimizer.step()
-            optimizer.zero_grad()
-
-            if (epoch+1) % args['valid_freq == 0:
-                valid_loss, dt_auc, dt_aup, df_auc, df_aup, df_logit, logit_all_pair, valid_log = self.eval(model, data, 'val')
-
-                train_log = {
-                    'epoch': epoch,
-                    'train_loss': loss.item()
-                }
-                
-                for log in [train_log, valid_log]:
-                    wandb.log(log)
-                    msg = [f'{i}: {j:>4d}' if isinstance(j, int) else f'{i}: {j:.4f}' for i, j in log.items()]
-                    tqdm.write(' | '.join(msg))
-
-                self.trainer_log['log'].append(train_log)
-                self.trainer_log['log'].append(valid_log)
-
-                if valid_loss < best_valid_loss:
-                    best_valid_loss = valid_loss
-                    best_epoch = epoch
-
-                    print(f'Save best checkpoint at epoch {epoch:04d}. Valid loss = {valid_loss:.4f}')
-                    ckpt = {
-                        'model_state': model.state_dict(),
-                        'optimizer_state': optimizer.state_dict(),
-                    }
-                    torch.save(ckpt, os.path.join(args['checkpoint_dir'], 'model_best.pt'))
-                    torch.save(z, os.path.join(args['checkpoint_dir'], 'node_embeddings.pt'))
-
-        self.trainer_log['training_time'] = time.time() - start_time
-
-        # Save models and node embeddings
-        print('Saving final checkpoint')
-        ckpt = {
-            'model_state': model.state_dict(),
-            'optimizer_state': optimizer.state_dict(),
-        }
-        torch.save(ckpt, os.path.join(args['checkpoint_dir'], 'model_final.pt'))
-
-        print(f'Training finished. Best checkpoint at epoch = {best_epoch:04d}, best valid loss = {best_valid_loss:.4f}')
-
-        self.trainer_log['best_epoch'] = best_epoch
-        self.trainer_log['best_valid_loss'] = best_valid_loss
-
-    def train_minibatch(self, model, data, optimizer, args):
-        start_time = time.time()
-        best_valid_loss = 1000000
-
-        data.edge_index = data.train_pos_edge_index
-        loader = GraphSAINTRandomWalkSampler(
-            data, batch_size=args['batch_size, walk_length=2, num_steps=args['num_steps,
-        )
-        for epoch in trange(args['epochs, desc='Epoch'):
-            model.train()
-
-            epoch_loss = 0
-            for step, batch in enumerate(tqdm(loader, desc='Step', leave=False)):
-                # Positive and negative sample
-                train_pos_edge_index = batch.edge_index.to(device)
-                z = model(batch.x.to(device), train_pos_edge_index)
-
-                neg_edge_index = negative_sampling(
-                    edge_index=train_pos_edge_index,
-                    num_nodes=z.size(0))
-                
-                logits = model.decode(z, train_pos_edge_index, neg_edge_index)
-                label = get_link_labels(train_pos_edge_index, neg_edge_index)
-                loss = F.binary_cross_entropy_with_logits(logits, label)
-
-                loss.backward()
-                # torch.nn.utils.clip_grad_norm_(model.parameters(), 1)
-                optimizer.step()
-                optimizer.zero_grad()
-
-                log = {
-                    'epoch': epoch,
-                    'step': step,
-                    'train_loss': loss.item(),
-                }
-                wandb.log(log)
-                msg = [f'{i}: {j:>4d}' if isinstance(j, int) else f'{i}: {j:.4f}' for i, j in log.items()]
-                tqdm.write(' | '.join(msg))
-
-                epoch_loss += loss.item()
-
-            if (epoch+1) % args['valid_freq == 0:
-                valid_loss, dt_auc, dt_aup, df_auc, df_aup, df_logit, logit_all_pair, valid_log = self.eval(model, data, 'val')
-
-                train_log = {
-                    'epoch': epoch,
-                    'train_loss': epoch_loss / step
-                }
-                
-                for log in [train_log, valid_log]:
-                    wandb.log(log)
-                    msg = [f'{i}: {j:>4d}' if isinstance(j, int) else f'{i}: {j:.4f}' for i, j in log.items()]
-                    tqdm.write(' | '.join(msg))
-
-                self.trainer_log['log'].append(train_log)
-                self.trainer_log['log'].append(valid_log)
-
-                if valid_loss < best_valid_loss:
-                    best_valid_loss = valid_loss
-                    best_epoch = epoch
-
-                    print(f'Save best checkpoint at epoch {epoch:04d}. Valid loss = {valid_loss:.4f}')
-                    ckpt = {
-                        'model_state': model.state_dict(),
-                        'optimizer_state': optimizer.state_dict(),
-                    }
-                    torch.save(ckpt, os.path.join(args['checkpoint_dir'], 'model_best.pt'))
-                    torch.save(z, os.path.join(args['checkpoint_dir'], 'node_embeddings.pt'))
-
-        self.trainer_log['training_time'] = time.time() - start_time
-
-        # Save models and node embeddings
-        print('Saving final checkpoint')
-        ckpt = {
-            'model_state': model.state_dict(),
-            'optimizer_state': optimizer.state_dict(),
-        }
-        torch.save(ckpt, os.path.join(args['checkpoint_dir'], 'model_final.pt'))
-
-        print(f'Training finished. Best checkpoint at epoch = {best_epoch:04d}, best valid loss = {best_valid_loss:.4f}')
-
-        self.trainer_log['best_epoch'] = best_epoch
-        self.trainer_log['best_valid_loss'] = best_valid_loss
-        self.trainer_log['training_time'] = np.mean([i['epoch_time'] for i in self.trainer_log['log'] if 'epoch_time' in i])
-
-    @torch.no_grad()
-    def eval(self, model, data, stage='val', pred_all=False):
-        model.eval()
-        pos_edge_index = data[f'{stage}_pos_edge_index']
-        neg_edge_index = data[f'{stage}_neg_edge_index']
-
-        if self.args['eval_on_cpu:
-            model = model.to('cpu')
-        
-        if hasattr(data, 'dtrain_mask'):
-            mask = data.dtrain_mask
-        else:
-            mask = data.dr_mask
-        z = model(data.x, data.train_pos_edge_index[:, mask])
-        logits = model.decode(z, pos_edge_index, neg_edge_index).sigmoid()
-        label = self.get_link_labels(pos_edge_index, neg_edge_index)
-
-        # DT AUC AUP
-        loss = F.binary_cross_entropy_with_logits(logits, label).cpu().item()
-        dt_auc = roc_auc_score(label.cpu(), logits.cpu())
-        dt_aup = average_precision_score(label.cpu(), logits.cpu())
-
-        # DF AUC AUP
-        if "gnndelete" in ['original']:
-            df_logit = []
-        else:
-            # df_logit = model.decode(z, data.train_pos_edge_index[:, data.df_mask]).sigmoid().tolist()
-            df_logit = model.decode(z, data.directed_df_edge_index).sigmoid().tolist()
-
-        if len(df_logit) > 0:
-            df_auc = []
-            df_aup = []
-        
-            # Sample pos samples
-            if len(self.df_pos_edge) == 0:
-                for i in range(500):
-                    mask = torch.zeros(data.train_pos_edge_index[:, data.dr_mask].shape[1], dtype=torch.bool)
-                    idx = torch.randperm(data.train_pos_edge_index[:, data.dr_mask].shape[1])[:len(df_logit)]
-                    mask[idx] = True
-                    self.df_pos_edge.append(mask)
-            
-            # Use cached pos samples
-            for mask in self.df_pos_edge:
-                pos_logit = model.decode(z, data.train_pos_edge_index[:, data.dr_mask][:, mask]).sigmoid().tolist()
-                
-                logit = df_logit + pos_logit
-                label = [0] * len(df_logit) +  [1] * len(df_logit)
-                df_auc.append(roc_auc_score(label, logit))
-                df_aup.append(average_precision_score(label, logit))
-        
-            df_auc = np.mean(df_auc)
-            df_aup = np.mean(df_aup)
-
-        else:
-            df_auc = np.nan
-            df_aup = np.nan
-
-        # Logits for all node pairs
-        if pred_all:
-            logit_all_pair = (z @ z.t()).cpu()
-        else:
-            logit_all_pair = None
-
-        log = {
-            f'{stage}_loss': loss,
-            f'{stage}_dt_auc': dt_auc,
-            f'{stage}_dt_aup': dt_aup,
-            f'{stage}_df_auc': df_auc,
-            f'{stage}_df_aup': df_aup,
-            f'{stage}_df_logit_mean': np.mean(df_logit) if len(df_logit) > 0 else np.nan,
-            f'{stage}_df_logit_std': np.std(df_logit) if len(df_logit) > 0 else np.nan
-        }
-
-        if self.args['eval_on_cpu:
-            model = model.to(device)
-
-        return loss, dt_auc, dt_aup, df_auc, df_aup, df_logit, logit_all_pair, log
-
-    @torch.no_grad()
-    def test(self, model, data, model_retrain=None, attack_model_all=None, attack_model_sub=None, ckpt='best'):
-        
-        if ckpt == 'best':    # Load best ckpt
-            ckpt = torch.load(os.path.join(self.args['checkpoint_dir'], 'model_best.pt'))
-            model.load_state_dict(ckpt['model_state'])
-
-        if 'ogbl' in 'cora':
-            pred_all = False
-        else:
-            pred_all = True
-        loss, dt_auc, dt_aup, df_auc, df_aup, df_logit, logit_all_pair, test_log = self.eval(model, data, 'test', pred_all)
-
-        self.trainer_log['dt_loss'] = loss
-        self.trainer_log['dt_auc'] = dt_auc
-        self.trainer_log['dt_aup'] = dt_aup
-        self.trainer_log['df_logit'] = df_logit
-        self.logit_all_pair = logit_all_pair
-        self.trainer_log['df_auc'] = df_auc
-        self.trainer_log['df_aup'] = df_aup
-        self.trainer_log['auc_sum'] = dt_auc + df_auc
-        self.trainer_log['aup_sum'] = dt_aup + df_aup
-        self.trainer_log['auc_gap'] = abs(dt_auc - df_auc)
-        self.trainer_log['aup_gap'] = abs(dt_aup - df_aup)
-
-        # # AUC AUP on Df
-        # if len(df_logit) > 0:
-        #     auc = []
-        #     aup = []
-
-        #     if self.args['eval_on_cpu:
-        #         model = model.to('cpu')
-            
-        #     z = model(data.x, data.train_pos_edge_index[:, data.dtrain_mask])
-        #     for i in range(500):
-        #         mask = torch.zeros(data.train_pos_edge_index[:, data.dr_mask].shape[1], dtype=torch.bool)
-        #         idx = torch.randperm(data.train_pos_edge_index[:, data.dr_mask].shape[1])[:len(df_logit)]
-        #         mask[idx] = True
-        #         pos_logit = model.decode(z, data.train_pos_edge_index[:, data.dr_mask][:, mask]).sigmoid().tolist()
-
-        #         logit = df_logit + pos_logit
-        #         label = [0] * len(df_logit) +  [1] * len(df_logit)
-        #         auc.append(roc_auc_score(label, logit))
-        #         aup.append(average_precision_score(label, logit))
-
-        #     self.trainer_log['df_auc'] = np.mean(auc)
-        #     self.trainer_log['df_aup'] = np.mean(aup)
-
-        return loss, dt_auc, dt_aup, df_auc, df_aup, df_logit, logit_all_pair, test_log
-
-    def save_log(self):
-        # print(self.trainer_log)
-        with open(os.path.join(self.args['checkpoint_dir'], 'trainer_log.json'), 'w') as f:
-            json.dump(self.trainer_log, f)
-        
-        torch.save(self.logit_all_pair, os.path.join(self.args['checkpoint_dir'], 'pred_proba.pt'))
-'''
 
 def BoundedKLDMean(logits, truth):
     return 1 - torch.exp(-F.kl_div(F.log_softmax(logits, -1), truth.softmax(-1), None, None, 'batchmean'))
@@ -404,7 +54,7 @@ def centering(K):
     unit = torch.ones([n, n], device=K.device)
     I = torch.eye(n, device=K.device)
     H = I - unit / n
-    return torch.matmul(torch.matmul(H, K), H)  
+    return torch.matmul(torch.matmul(H, K), H)
 
 def rbf(X, sigma=None):
     GX = torch.matmul(X, X.T)
@@ -418,7 +68,7 @@ def rbf(X, sigma=None):
 
 def kernel_HSIC(X, Y, sigma=None):
     return torch.sum(centering(rbf(X, sigma)) * centering(rbf(Y, sigma)))
-        
+
 def linear_HSIC(X, Y):
     L_X = torch.matmul(X, X.T)
     L_Y = torch.matmul(Y, Y.T)
@@ -444,7 +94,7 @@ def get_loss_fct(name):
     #     loss_fct = BoundedKLDMean
     # elif name == 'cosine':
     #     loss_fct = CosineDistanceMean
-    
+
     if name == 'kld_mean':
         loss_fct = BoundedKLDMean
     elif name == 'kld_sum':
@@ -490,7 +140,7 @@ class NodeClassificationTrainer(Trainer):
                     'epoch': epoch,
                     'train_loss': loss.item()
                 }
-                
+
                 for log in [train_log, valid_log]:
                     wandb.log(log)
                     msg = [f'{i}: {j:>4d}' if isinstance(j, int) else f'{i}: {j:.4f}' for i, j in log.items()]
@@ -532,7 +182,7 @@ class NodeClassificationTrainer(Trainer):
 
         if self.args['eval_on_cpu']:
             model = model.to('cpu')
-        
+
         # if hasattr(data, 'dtrain_mask'):
         #     mask = data.dtrain_mask
         # else:
@@ -554,7 +204,7 @@ class NodeClassificationTrainer(Trainer):
         # if len(df_logit) > 0:
         #     df_auc = []
         #     df_aup = []
-        
+
         #     # Sample pos samples
         #     if len(self.df_pos_edge) == 0:
         #         for i in range(500):
@@ -562,16 +212,16 @@ class NodeClassificationTrainer(Trainer):
         #             idx = torch.randperm(data.train_pos_edge_index[:, data.dr_mask].shape[1])[:len(df_logit)]
         #             mask[idx] = True
         #             self.df_pos_edge.append(mask)
-            
+
         #     # Use cached pos samples
         #     for mask in self.df_pos_edge:
         #         pos_logit = model.decode(z, data.train_pos_edge_index[:, data.dr_mask][:, mask]).sigmoid().tolist()
-                
+
         #         logit = df_logit + pos_logit
         #         label = [0] * len(df_logit) +  [1] * len(df_logit)
         #         df_auc.append(roc_auc_score(label, logit))
         #         df_aup.append(average_precision_score(label, logit))
-        
+
         #     df_auc = np.mean(df_auc)
         #     df_aup = np.mean(df_aup)
 
@@ -598,7 +248,7 @@ class NodeClassificationTrainer(Trainer):
 
     @torch.no_grad()
     def test(self, model, data, model_retrain=None, attack_model_all=None, attack_model_sub=None, ckpt='best'):
-        
+
         if ckpt == 'best':    # Load best ckpt
             ckpt = torch.load(os.path.join(self.args['checkpoint_dir'], 'model_best.pt'))
             model.load_state_dict(ckpt['model_state'])
@@ -626,46 +276,12 @@ class GNNDeleteNodeClassificationTrainer(NodeClassificationTrainer):
 
         best_metric = 0
 
-        # All node paris in S_Df without Df
-        ## S_Df 1 hop all pair mask
-        # sdf1_all_pair_mask = torch.zeros(data.num_nodes, data.num_nodes, dtype=torch.bool)
-        # idx = torch.combinations(torch.arange(data.num_nodes)[data.sdf_node_1hop_mask], with_replacement=True).t()
-        # sdf1_all_pair_mask[idx[0], idx[1]] = True
-        # sdf1_all_pair_mask[idx[1], idx[0]] = True
-
-        # assert sdf1_all_pair_mask.sum().cpu() == data.sdf_node_1hop_mask.sum().cpu() * data.sdf_node_1hop_mask.sum().cpu()
-
-        # ## Remove Df itself
-        # sdf1_all_pair_mask[data.train_pos_edge_index[:, data.df_mask][0], data.train_pos_edge_index[:, data.df_mask][1]] = False
-        # sdf1_all_pair_mask[data.train_pos_edge_index[:, data.df_mask][1], data.train_pos_edge_index[:, data.df_mask][0]] = False
-
-        # ## S_Df 2 hop all pair mask
-        # sdf2_all_pair_mask = torch.zeros(data.num_nodes, data.num_nodes, dtype=torch.bool)
-        # idx = torch.combinations(torch.arange(data.num_nodes)[data.sdf_node_2hop_mask], with_replacement=True).t()
-        # sdf2_all_pair_mask[idx[0], idx[1]] = True
-        # sdf2_all_pair_mask[idx[1], idx[0]] = True
-
-        # assert sdf2_all_pair_mask.sum().cpu() == data.sdf_node_2hop_mask.sum().cpu() * data.sdf_node_2hop_mask.sum().cpu()
-
-        # ## Remove Df itself
-        # sdf2_all_pair_mask[data.train_pos_edge_index[:, data.df_mask][0], data.train_pos_edge_index[:, data.df_mask][1]] = False
-        # sdf2_all_pair_mask[data.train_pos_edge_index[:, data.df_mask][1], data.train_pos_edge_index[:, data.df_mask][0]] = False
-
-        # ## Lower triangular mask
-        # idx = torch.tril_indices(data.num_nodes, data.num_nodes, -1)
-        # lower_mask = torch.zeros(data.num_nodes, data.num_nodes, dtype=torch.bool)
-        # lower_mask[idx[0], idx[1]] = True
-
-        # ## The final mask is the intersection
-        # sdf1_all_pair_without_df_mask = sdf1_all_pair_mask & lower_mask
-        # sdf2_all_pair_without_df_mask = sdf2_all_pair_mask & lower_mask
-
         non_df_node_mask = torch.ones(data.x.shape[0], dtype=torch.bool, device=data.x.device)
         non_df_node_mask[data.directed_df_edge_index.flatten().unique()] = False
 
         data.sdf_node_1hop_mask_non_df_mask = data.sdf_node_1hop_mask & non_df_node_mask
         data.sdf_node_2hop_mask_non_df_mask = data.sdf_node_2hop_mask & non_df_node_mask
-        
+
         # Original node embeddings
         with torch.no_grad():
             z1_ori, z2_ori = model.get_original_embeddings(data.x, data.edge_index[:, data.dr_mask], return_all_emb=True)
@@ -750,7 +366,7 @@ class GNNDeleteNodeClassificationTrainer(NodeClassificationTrainer):
                     'loss_l': loss_l.item(),
                     'train_time': epoch_time,
                 }
-                
+
                 for log in [train_log, valid_log]:
                     wandb.log(log)
                     msg = [f'{i}: {j:>4d}' if isinstance(j, int) else f'{i}: {j:.4f}' for i, j in log.items()]
@@ -783,13 +399,13 @@ class DeletionLayer(nn.Module):
         self.deletion_weight = nn.Parameter(torch.ones(dim, dim) / 1000)
         # self.deletion_weight = nn.Parameter(torch.eye(dim, dim))
         # init.xavier_uniform_(self.deletion_weight)
-    
+
     def forward(self, x, mask=None):
         '''Only apply deletion operator to the local nodes identified by mask'''
 
         if mask is None:
             mask = self.mask
-        
+
         if mask is not None:
             new_rep = x.clone()
             new_rep[mask] = torch.matmul(new_rep[mask], self.deletion_weight)
@@ -810,19 +426,19 @@ class GCNDelete(GCN):
     def forward(self, x, edge_index, mask_1hop=None, mask_2hop=None, return_all_emb=False):
         # with torch.no_grad():
         x1 = self.conv1(x, edge_index)
-        
+
         x1 = self.deletion1(x1, mask_1hop)
 
         x = F.relu(x1)
-        
+
         x2 = self.conv2(x, edge_index)
         x2 = self.deletion2(x2, mask_2hop)
 
         if return_all_emb:
             return x1, x2
-        
+
         return x2
-    
+
     def get_original_embeddings(self, x, edge_index, return_all_emb=False):
         return super().forward(x, edge_index, return_all_emb)
 
@@ -838,11 +454,11 @@ class GINDelete(GIN):
     def forward(self, x, edge_index, mask_1hop=None, mask_2hop=None, return_all_emb=False):
         with torch.no_grad():
             x1 = self.conv1(x, edge_index)
-        
+
         x1 = self.deletion1(x1, mask_1hop)
 
         x = F.relu(x1)
-        
+
         x2 = self.conv2(x, edge_index)
         x2 = self.deletion2(x2, mask_2hop)
 
@@ -850,7 +466,7 @@ class GINDelete(GIN):
             return x1, x2
 
         return x2
-    
+
     def get_original_embeddings(self, x, edge_index, return_all_emb=False):
         return super().forward(x, edge_index, return_all_emb)
 
@@ -864,12 +480,12 @@ class GNNDeletion:
         self.attack_path_all = os.path.join(self.args['checkpoint_dir'], 'cora', 'member_infer_all', str(self.args['random_seed']))
         self.attack_path_sub = os.path.join(self.args['checkpoint_dir'], 'cora', 'member_infer_sub', str(self.args['random_seed']))
         seed_everything(self.args['random_seed'])
-        
+
         self.args['checkpoint_dir'] = os.path.join(
-            self.args['checkpoint_dir'], 'cora', 'gcn', f'{"gnndelete"}-node_deletion', 
+            self.args['checkpoint_dir'], 'cora', 'gcn', f'{"gnndelete"}-node_deletion',
             '-'.join([str(i) for i in [self.args['loss_fct'], self.args['loss_type'], self.args['alpha'], self.args['neg_sample_random']]]),
             '-'.join([str(i) for i in [self.args['df'], self.args['df_size'], self.args['random_seed']]]))
-        
+
         os.makedirs(self.args['checkpoint_dir'], exist_ok=True)
 
     def load_dataset(self):
@@ -893,7 +509,7 @@ class GNNDeletion:
             df_size = int(self.args['df_size'])
         else:  # df_size is the ratio
             df_size = int(self.args['df_size'] / 100 * self.data.edge_index.shape[1])
-        
+
         print(f'Original size: {self.data.num_nodes:,}')
         print(f'Df size: {df_size:,}')
 
@@ -916,17 +532,17 @@ class GNNDeletion:
         print('Deleting the following nodes:', df_nodes)
 
         _, two_hop_edge, _, two_hop_mask = k_hop_subgraph(
-            self.data.edge_index[:, df_mask_edge].flatten().unique(), 
-            2, 
+            self.data.edge_index[:, df_mask_edge].flatten().unique(),
+            2,
             self.data.edge_index,
             num_nodes=self.data.num_nodes)
 
         _, one_hop_edge, _, one_hop_mask = k_hop_subgraph(
-            self.data.edge_index[:, df_mask_edge].flatten().unique(), 
-            1, 
+            self.data.edge_index[:, df_mask_edge].flatten().unique(),
+            1,
             self.data.edge_index,
             num_nodes=self.data.num_nodes)
-        
+
         sdf_node_1hop = torch.zeros(self.data.num_nodes, dtype=torch.bool)
         sdf_node_2hop = torch.zeros(self.data.num_nodes, dtype=torch.bool)
 
@@ -942,7 +558,7 @@ class GNNDeletion:
         two_hop_mask = two_hop_mask.bool()
         df_mask_edge = df_mask_edge.bool()
         dr_mask_edge = ~df_mask_edge
-        
+
         self.data.sdf_mask = two_hop_mask
         self.data.df_mask = df_mask_edge
         self.data.dr_mask = dr_mask_edge
@@ -969,7 +585,7 @@ class GNNDeletion:
             {'params': [p for n, p in self.model.named_parameters() if 'del' in n], 'weight_decay': 0.0}
         ]
         print('parameters_to_optimize', [n for n, p in self.model.named_parameters() if 'del' in n])
-        
+
         self.optimizer = torch.optim.Adam(parameters_to_optimize, lr=self.args['lr'])
 
         wandb.watch(self.model, log_freq=100)
