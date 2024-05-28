@@ -84,7 +84,7 @@ if __name__ == "__main__":
     if args.wandb:
         wandb.log({"Poisoned Model Test Accuracy": acc})
 
-    exit()
+    # exit()
 
     print("===========Unlearning==========")
     #Data into geometric
@@ -135,7 +135,7 @@ if __name__ == "__main__":
 
     acc = test_model(unlearned_model, poisoned_dataset)
 
-    if args.wandb:
-        wandb.log({"Unlearned Model Test Accuracy": acc})
+    # if args.wandb:
+    #     wandb.log({"Unlearned Model Test Accuracy": acc})
 
     print("=====================")

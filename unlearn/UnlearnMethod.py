@@ -39,4 +39,4 @@ class UnlearnMethod(ABC):
         save_dir: str, directory to save the model
         save_name: str, name of the model
         """
-        torch.save(self.best_model, os.path.join(save_dir, save_name))
+        torch.save(self.target_model, os.path.join(save_dir, save_name))

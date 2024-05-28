@@ -29,7 +29,7 @@ def load_args():
     parser.add_argument(
         "--dataset_name",
         type=str,
-        default= "cora",
+        default= "Cora",
         help="Dataset to use",
     )
     parser.add_argument(
@@ -64,7 +64,6 @@ def load_args():
         default=3,
         help="Number of layers in the model",
     )
-    
     parser.add_argument(
         "--unlearn_method",
         type=str,
@@ -79,7 +78,6 @@ def load_args():
         choices=["node", "edge", "feature"],
         help="Unlearning request type",
     )
-    
     parser.add_argument(
         "--lr_attack",
         type=float,

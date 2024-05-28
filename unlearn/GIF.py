@@ -1,3 +1,5 @@
+from unlearn.UnlearnMethod import UnlearnMethod
+
 from cgi import test
 import logging
 import time
@@ -20,7 +22,7 @@ import numpy as np
 from src.model_utils import test_model
 from src.config import args
 
-class ExpGraphInfluenceFunction():
+class ExpGraphInfluenceFunction(UnlearnMethod):
     def __init__(self, model, data):
         self.deleted_nodes = np.array([])
         self.feature_nodes = np.array([])
@@ -39,8 +41,8 @@ class ExpGraphInfluenceFunction():
         unlearning_times = np.empty((0))
         training_times = np.empty((0))
 
-        self.best_model= self.target_model
-        best_score= test_model(self.target_model, self.data)
+        # self.best_model= self.target_model
+        # best_score= test_model(self.target_model, self.data)
 
         for run in range(self.args.gif_num_runs):
             run_training_time, result_tuple = self._train_model(run)
@@ -54,10 +56,10 @@ class ExpGraphInfluenceFunction():
             run_f1_unlearning = np.append(run_f1_unlearning, f1_score_unlearning)
 
             #saving best model
-            test_score= test_model(self.target_model, self.data)
-            if(test_score>=best_score):
-                best_score= test_score
-                self.best_model= self.target_model
+            # test_score= test_model(self.target_model, self.data)
+            # if(test_score>=best_score):
+            #     best_score= test_score
+            #     self.best_model= self.target_model
 
         return self.target_model
 
