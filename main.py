@@ -16,10 +16,10 @@ gen.manual_seed(seed)
 if __name__ == "__main__":
     if args.wandb:
         wandb.init(project="corr_graph_unlearn", name=args.experiment_name)
-        
+
         config = wandb.config
         config.update(args)
-    
+
     print("===========Dataset==========")
     dataset = load_dataset(dataset_name=args.dataset_name, mode=args.test_split)
     print(dataset)
@@ -44,12 +44,12 @@ if __name__ == "__main__":
             save_dir=f"./models/base_model",
             save_name=f"{args.model}_base",
         )
-    
+
     acc = test_model(model, dataset)
 
     if args.wandb:
         wandb.log({"Base Model Test Accuracy": acc})
-    
+
 
     print("===========Injection Attack==========")
     poisoned_adj, poisoned_x = attack(
@@ -78,9 +78,9 @@ if __name__ == "__main__":
             save_dir=f"./models/{args.poison_model_name}",
             save_name=f"{args.poison_model_name}_poisoned",
         )
-        
+
     acc = test_model(poison_trained_model, poisoned_dataset)
-    
+
     if args.wandb:
         wandb.log({"Poisoned Model Test Accuracy": acc})
 
@@ -123,16 +123,19 @@ if __name__ == "__main__":
         'df': 'none',
         'df_size': 0.5,
     }
-    
+
     method = get_unlearn_method(args.unlearn_method, model=poison_trained_model, data=poisoned_data)
     method.set_unlearn_request(args.unlearn_request)
     method.set_nodes_to_unlearn(poisoned_data)
     unlearned_model = method.unlearn()
-    method.save_unlearned_model()
-    
+
+    save_dir=f"./models/{args.poison_model_name}"
+    save_name=f"{args.poison_model_name}_unlearned"
+    method.save_unlearned_model(save_dir, save_name)
+
     acc = test_model(unlearned_model, poisoned_dataset)
 
     if args.wandb:
         wandb.log({"Unlearned Model Test Accuracy": acc})
-    
+
     print("=====================")

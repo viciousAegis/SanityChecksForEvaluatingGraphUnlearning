@@ -28,7 +28,8 @@ class ExpGraphInfluenceFunction():
         self.args=args
         self.data=data
 
-        self.train_test_split()
+    def unlearn(self):
+        # self.train_test_split() (Use default train and test mask of data)
         self.unlearning_request()
 
         run_f1 = np.empty((0))
@@ -47,6 +48,8 @@ class ExpGraphInfluenceFunction():
             unlearning_times = np.append(unlearning_times, unlearning_time)
             run_f1_unlearning = np.append(run_f1_unlearning, f1_score_unlearning)
 
+        return self.target_model
+    
         # f1_score_avg = np.average(run_f1)
         # f1_score_std = np.std(run_f1)
 
