@@ -33,7 +33,7 @@ class ExpGraphInfluenceFunction(UnlearnMethod):
         self.data=data
 
     def unlearn(self):
-        # self.train_test_split() (Use default train and test mask of data)
+        # self.train_test_split() 
         self.unlearning_request()
 
         run_f1 = np.empty((0))

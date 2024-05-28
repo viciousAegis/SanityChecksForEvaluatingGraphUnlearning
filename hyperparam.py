@@ -22,7 +22,7 @@ if __name__=="__main__":
     # gif hyperparameters
     iteration = [2, 3, 4, 5, 6]
     damp = [0, 0.2, 0.4, 0.6, 0.7]
-    scale = [25, 40, 55, 70, 85, 100]
+    scale = [25, 50, 100, 200, 300]
 
     for attack in attacks:
         for i in iteration:
