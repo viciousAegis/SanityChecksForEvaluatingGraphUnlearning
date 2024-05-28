@@ -15,7 +15,10 @@ gen.manual_seed(seed)
 
 if __name__ == "__main__":
     if args.wandb:
-        wandb.init(project="corr_graph_unlearn", name=args.experiment_name)
+        
+        wandb.login(key="89ab31781eb2ba697ea9aed8d264c4f778a004ef")
+        
+        wandb.init(project="corr_graph_unlearn")
 
         config = wandb.config
         config.update(args)
