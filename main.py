@@ -138,7 +138,7 @@ if __name__ == "__main__":
 
     acc = test_model(unlearned_model, poisoned_dataset)
 
-    # if args.wandb:
-    #     wandb.log({"Unlearned Model Test Accuracy": acc})
+    if args.wandb:
+        wandb.log({"Unlearned Model Test Accuracy": acc})
 
     print("=====================")
