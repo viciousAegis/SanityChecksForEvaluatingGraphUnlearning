@@ -18,3 +18,16 @@ if __name__=="__main__":
                         print(f"Attack {attack} with kappa={k}, alpha1={a1}, alpha2={a2}, lr={lr}")
                         
                         os.system(f"python main.py --attack {attack} --wandb --unlearn_method megu --kappa {k} --alpha1 {a1} --alpha2 {a2} --megu_unlearn_lr {lr}")
+
+    # gif hyperparameters
+    iteration = [2, 3, 4, 5, 6]
+    damp = [0, 0.2, 0.4, 0.6, 0.7]
+    scale = [25, 40, 55, 70, 85, 100]
+
+    for attack in attacks:
+        for i in iteration:
+            for d in damp:
+                for s in scale:
+                    print(f"Attack={attack} with iteration={i}, damp={d}, scale={s}")
+
+                    os.system(f"python main.py --attack {attack} --wandb --unlearn_method gif --iteration {i} --damp {d} --scale {s}")
