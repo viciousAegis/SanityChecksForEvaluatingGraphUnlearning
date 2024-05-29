@@ -1,17 +1,27 @@
 import os
 import shutil
+import torch_geometric.transforms as T
 from torch_geometric.utils import to_scipy_sparse_matrix
-from torch_geometric.datasets import Planetoid
+from torch_geometric.datasets import Amazon, Planetoid, Twitch
 
 from grb.dataset.dataset import CustomDataset, Dataset
 
 
 def load_base_dataset(dataset_name="Cora"):
     if dataset_name == "Cora":
-        dataset = Planetoid(root="data", name=dataset_name)
+        dataset = Planetoid(root="data", name=dataset_name, transform=T.NormalizeFeatures())
         return dataset
     elif dataset_name == "CiteSeer":
-        dataset = Planetoid(root="data", name=dataset_name)
+        dataset = Planetoid(root="data", name=dataset_name, transform=T.NormalizeFeatures())
+        return dataset
+    elif dataset_name == "EN":
+        dataset = Twitch(root="data", name="EN", transform=T.NormalizeFeatures())
+        return dataset
+    elif dataset_name == "Photo":
+        dataset = Amazon(root="data", name="Photo", transform=T.NormalizeFeatures())
+        return dataset
+    elif dataset_name == "Computers":
+        dataset = Amazon(root="data", name="Computers", transform=T.NormalizeFeatures())
         return dataset
     else:
         raise NotImplementedError(f"Dataset {dataset_name} not supported.")
