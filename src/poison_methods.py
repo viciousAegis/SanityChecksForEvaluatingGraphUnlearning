@@ -4,7 +4,7 @@ from grb.attack.injection.tdgia import TDGIA
 from grb.attack.injection.rand import RAND
 from grb.attack.injection.speit import SPEIT
 from grb.utils.normalize import GCNAdjNorm
-from src.config import args
+from gub.config import args
 
 def attack(model, dataset, attack_type="tdgia"):
 
