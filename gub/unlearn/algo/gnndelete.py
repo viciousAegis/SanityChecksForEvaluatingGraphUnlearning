@@ -1,27 +1,16 @@
 import os
-import copy
 import math
-import json
 import time
 import wandb
-import pickle
-import argparse
-import numpy as np
+
 from tqdm import trange, tqdm
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torch.nn.init as init
-from torch_geometric.utils import to_undirected, to_networkx, k_hop_subgraph, is_undirected
-from torch_geometric.data import Data
+from torch_geometric.utils import k_hop_subgraph, is_undirected
 import torch_geometric.transforms as T
-from torch_geometric.datasets import CitationFull, Coauthor, Flickr, RelLinkPredDataset, WordNet18, WordNet18RR
-from torch_geometric.loader import GraphSAINTRandomWalkSampler
 from torch_geometric.seed import seed_everything
-from ogb.graphproppred import Evaluator
-from torch_geometric.data import DataLoader
 from torch_geometric.utils import negative_sampling
-from torch_geometric.loader import GraphSAINTRandomWalkSampler
 from sklearn.metrics import roc_auc_score, average_precision_score, accuracy_score, f1_score
 
 from grb.model.torch.gcn import GCN

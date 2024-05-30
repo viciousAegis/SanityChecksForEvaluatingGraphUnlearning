@@ -4,6 +4,7 @@ import numpy as np
 import torch
 from tqdm import tqdm
 
+
 class FeatureTriggerAttack(BaseFeatureAttack):
     """
     Feature attack that adds a trigger pattern to the features of a subset of nodes.
@@ -32,9 +33,12 @@ class FeatureTriggerAttack(BaseFeatureAttack):
         return trigger_pattern
 
     def attack(self, poison_ratio, trigger_size):
+
+        train_idxs = self.dataset.train_mask.nonzero().view(-1)
+
         num_nodes_to_poison = int(
-            poison_ratio * self.dataset.num_nodes
-        )  # number of nodes to poison
+            poison_ratio * len(train_idxs)
+        )  # number of nodes to poison in training set
 
         print("Number of nodes to poison: ", num_nodes_to_poison)
 
@@ -45,9 +49,7 @@ class FeatureTriggerAttack(BaseFeatureAttack):
         trigger_pattern = self.create_trigger_pattern(trigger_size)
 
         # select a random subset of nodes to poison
-        nodes_to_poison = random.sample(
-            range(self.dataset.num_nodes), num_nodes_to_poison
-        )
+        nodes_to_poison = random.sample(train_idxs.tolist(), num_nodes_to_poison)
 
         # select a start index for the trigger pattern
         start_index = random.randint(0, self.features[0].shape[0] - trigger_size)

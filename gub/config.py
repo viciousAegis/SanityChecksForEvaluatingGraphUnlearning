@@ -1,12 +1,16 @@
 import argparse
+import torch
+
 
 def load_args():
-    parser = argparse.ArgumentParser(description="GNN Unlearning on Injection Attack Testing")
+    parser = argparse.ArgumentParser(
+        description="GNN Unlearning on Injection Attack Testing"
+    )
     parser.add_argument(
         "--attack",
         type=str,
-        default="fgsm",
-        choices=["tdgia", "fgsm", "pgd", "rand", "speit"],
+        default="feature_trigger",
+        choices=["feature_trigger"],
         help="Attack type to test",
     )
     parser.add_argument(
@@ -29,7 +33,7 @@ def load_args():
     parser.add_argument(
         "--dataset_name",
         type=str,
-        default= "Cora",
+        default="Cora",
         help="Dataset to use",
     )
     parser.add_argument(
@@ -42,13 +46,13 @@ def load_args():
     parser.add_argument(
         "--lr_optimizer",
         type=float,
-        default=0.01,
+        default=0.0001,
         help="Learning rate for optimizer",
     )
     parser.add_argument(
         "--n_epoch_train",
         type=int,
-        default= 200, #200,
+        default=300,  # 200,
         help="Number of epochs to train",
     )
     parser.add_argument(
@@ -64,6 +68,27 @@ def load_args():
         default=3,
         help="Number of layers in the model",
     )
+
+    # trigger attack
+    parser.add_argument(
+        "--poison_ratio",
+        type=float,
+        default=0.05,
+        help="fraction of nodes to poison",
+    )
+    parser.add_argument(
+        "--target_label",
+        type=int,
+        default=0,
+        help="Target label for attack",
+    )
+    parser.add_argument(
+        "--trigger_size",
+        type=int,
+        default=10,
+        help="Size of thw trigger to be put into the faetures",
+    )
+
     parser.add_argument(
         "--unlearn_method",
         type=str,
@@ -87,101 +112,101 @@ def load_args():
     parser.add_argument(
         "--epsilon_attack",
         type=float,
-        default= 0.3,
+        default=0.3,
         help="Epsilon for attack",
     )
     parser.add_argument(
         "--n_epoch_attack",
         type=int,
-        default= 100,
+        default=100,
         help="Number of epochs for attack",
     )
     parser.add_argument(
         "--n_inject_max",
         type=int,
-        default= 32,
+        default=32,
         help="Max number of nodes to be injected in attack",
     )
     parser.add_argument(
         "--n_edge_max",
         type=int,
-        default= 64,
+        default=64,
         help="Max degree of injected nodes in attack",
     )
 
-    #MEGU arguments
+    # MEGU arguments
     parser.add_argument(
         "--kappa",
         type=float,
-        default= 0.01,
+        default=0.01,
         help="Hyperparameter for MEGU",
     )
     parser.add_argument(
         "--alpha1",
         type=float,
-        default= 0.8,
+        default=0.8,
         help="Hyperparameter for MEGU",
     )
     parser.add_argument(
         "--alpha2",
         type=float,
-        default= 0.5,
+        default=0.5,
         help="Hyperparameter for MEGU",
     )
     parser.add_argument(
         "--megu_num_epochs",
         type=int,
-        default= 100,
+        default=100,
         help="Epoch number for MEGU",
     )
     parser.add_argument(
         "--megu_num_runs",
         type=int,
-        default= 2,
+        default=2,
         help="Runs number for MEGU",
     )
     parser.add_argument(
         "--megu_unlearn_lr",
         type=float,
-        default= 1e-4,
+        default=1e-4,
         help="Learning ratio for unlearn loop in MEGU",
     )
     parser.add_argument(
         "--megu_test_ratio",
         type=float,
-        default= 0.2,
+        default=0.2,
         help="Test ratio for MEGU",
     )
 
-    #GIF Arguments
+    # GIF Arguments
     parser.add_argument(
         "--gif_test_ratio",
         type=float,
-        default= 0.2,
+        default=0.2,
         help="Test ratio for GIF",
     )
     parser.add_argument(
         "--gif_num_runs",
         type=str,
-        default= 2,
+        default=2,
         help="Runs number for GIF",
     )
     parser.add_argument(
         "--iteration",
         type=int,
-        default= 5,
+        default=5,
         help="Hyperparameter for GIF",
     )
     parser.add_argument(
         "--damp",
         type=float,
-        default= 0.0,
+        default=0.0,
         help="Hyperparameter for GIF",
     )
     parser.add_argument(
         "--scale",
         type=int,
-        default= 50,
+        default=50,
         help="Hyperparameter for GIF",
     )
 
@@ -189,8 +214,11 @@ def load_args():
 
 
 args = load_args()
+args.device = "cuda" if torch.cuda.is_available() else "cpu"
 args.poison_model_name = f"{args.attack}_{args.model}"
-args.experiment_name = f"{args.attack}_{args.model}_{args.unlearn_method}_{args.unlearn_request}"
+args.experiment_name = (
+    f"{args.attack}_{args.model}_{args.unlearn_method}_{args.unlearn_request}"
+)
 print("===========ARGS===========")
 print(args)
 print("==========================")

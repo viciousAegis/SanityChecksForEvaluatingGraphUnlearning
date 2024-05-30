@@ -80,7 +80,7 @@ class GIF(UnlearnMethod):
         # unique_nodes = np.random.choice(len(self.train_indices),
         #                                 int(len(self.train_indices) * self.args['unlearn_ratio']),
         #                                 replace=False)
-        unique_nodes = self.data.deletion_indices
+        unique_nodes = self.nodes_to_unlearn
         self.data.edge_index_unlearn = self.update_edge_index_unlearn(unique_nodes)
         self.find_k_hops(unique_nodes)
 
@@ -151,12 +151,9 @@ class GIF(UnlearnMethod):
     def get_gradients(self, unlearn_info=None):
         grad_all, grad1, grad2 = None, None, None
 
-        out1 = self.target_model.forward(
-            self.data.x, self.get_adj_mat(self.data.edge_index, self.data.num_nodes)
-        )
+        out1 = self.target_model.forward(self.data.x, self.data.edge_index)
         out2 = self.target_model.forward(
-            self.data.x_unlearn,
-            self.get_adj_mat(self.data.edge_index, self.data.num_nodes),
+            self.data.x_unlearn, self.data.edge_index_unlearn
         )
 
         mask1 = np.array([False] * out1.shape[0])

@@ -14,7 +14,6 @@ from torch_geometric.utils import k_hop_subgraph, to_scipy_sparse_matrix
 import scipy.sparse as sp
 from sklearn.metrics import f1_score
 from gub.config import args
-from src.model_utils import test_model
 
 
 class GATE(torch.nn.Module):
@@ -40,16 +39,6 @@ def propagate(features, k, adj_norm):
     for i in range(k):
         feature_list.append(torch.spmm(adj_norm, feature_list[-1]))
     return feature_list[-1]
-
-
-def get_adj_mat(coo_mat, num_nodes):
-    mat = torch.zeros(num_nodes, num_nodes)
-
-    for i in range(len(coo_mat[0])):
-        a, b = coo_mat[0][i].item(), coo_mat[1][i].item()
-        mat[a][b] = 1
-    mat = torch.tensor(mat, dtype=torch.float32)
-    return mat
 
 
 def sparse_mx_to_torch_sparse_tensor(sparse_mx):
@@ -250,9 +239,7 @@ class MEGU(UnlearnMethod):
 
         start_time = time.time()
         self.target_model.eval()
-        out = self.target_model(
-            self.data.x, get_adj_mat(self.data.edge_index, self.data.num_nodes)
-        )
+        out = self.target_model(self.data.x, self.data.edge_index)
         y = self.data.y.cpu()
         if self.args.dataset_name == "ppi":
             y_hat = torch.sigmoid(out).cpu().detach().numpy()
@@ -360,9 +347,7 @@ class MEGU(UnlearnMethod):
 
         with torch.no_grad():
             self.target_model.eval()
-            preds = self.target_model(
-                self.data.x, get_adj_mat(self.data.edge_index, self.data.num_nodes)
-            )
+            preds = self.target_model(self.data.x, self.data.edge_index)
             if self.args.dataset_name == "ppi":
                 preds = torch.sigmoid(preds).ge(0.5)
                 preds = preds.type_as(self.data.y)
@@ -377,11 +362,9 @@ class MEGU(UnlearnMethod):
 
             # print("SHAPEEEE ERORORROROR")
             # print(self.data.x_unlearn.shape)
-            # print(get_adj_mat(self.data.edge_index_unlearn, self.data.num_nodes).shape)
 
             out_ori = self.target_model(
-                self.data.x_unlearn,
-                get_adj_mat(self.data.edge_index_unlearn, self.data.num_nodes),
+                self.data.x_unlearn, self.data.edge_index_unlearn
             )
             out = operator(out_ori)
 
@@ -419,7 +402,7 @@ class MEGU(UnlearnMethod):
         self.target_model.eval()
         test_out = self.target_model(
             self.data.x_unlearn,
-            get_adj_mat(self.data.edge_index_unlearn, self.data.num_nodes),
+            self.data.edge_index_unlearn,
         )
         if self.args.dataset_name == "ppi":
             out = torch.sigmoid(test_out)

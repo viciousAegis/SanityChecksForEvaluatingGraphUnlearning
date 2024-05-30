@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+import torch
 
 
 class BaseFeatureAttack(ABC):
@@ -28,13 +29,15 @@ class BaseFeatureAttack(ABC):
         """
         self.dataset.x = poisoned_features  # update dataset features
         self.dataset.y = poisoned_labels  # update dataset labels
-        self.dataset.poison_indices = poison_indices  # update dataset poison indices
+        # create a mask for the poisoned nodes
+        self.dataset.poison_mask = torch.zeros(self.dataset.num_nodes, dtype=torch.bool)
+        self.dataset.poison_mask[poison_indices] = True
 
     @abstractmethod
     def attack(self, **kwargs):
         """
         Perform feature attack on dataset.
-        
+
         Returns
         -------
         poisoned_dataset

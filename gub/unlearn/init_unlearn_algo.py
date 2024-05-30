@@ -1,13 +1,11 @@
-from .algo import GIF, MEGU, Projector, GNNDelete
+from .algo import GIF, MEGU, Projector
 
-def init_unlearn_algo(name, **kwargs):
+def init_unlearn_algo(name, model, dataset):
     if name == "projector":
-        return Projector(**kwargs)
+        return Projector(model=model, data=dataset)
     elif name=="megu":
-        return MEGU(**kwargs)
+        return MEGU(model=model, data=dataset)
     elif name=="gif":
-        return GIF(**kwargs)
-    elif name=="gnndelete":
-        return GNNDelete(**kwargs)
+        return GIF(model=model, data=dataset)
     else:
         raise ValueError("Unlearn method not found")

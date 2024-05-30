@@ -5,8 +5,8 @@ import torch
 import torch.nn.functional as F
 from tqdm.auto import tqdm
 
-import utils
 
+import gub.train.utils as utils
 
 def eval_acc(pred, labels, mask=None):
     r"""
