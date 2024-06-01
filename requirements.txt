@@ -1,12 +1,8 @@
-recommonmark==0.7.1
-scipy==1.5.2
-sphinx_rtd_theme==0.5.2
-matplotlib==3.3.1
-numpy==1.22.0
-pandas==1.1.1
-networkx==2.5
-scikit_learn==0.24.2
+matplotlib
+numpy
+pandas
+networkx
+scikit_learn
 torch
-cogdl~=0.3.0.post1
 torch_geometric
 wandb
