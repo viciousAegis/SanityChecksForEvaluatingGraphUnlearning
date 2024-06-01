@@ -60,6 +60,11 @@ class ExpGraphInfluenceFunction(UnlearnMethod):
             # if(test_score>=best_score):
             #     best_score= test_score
             #     self.best_model= self.target_model
+        
+        idx = 0
+        for p in self.target_model.parameters():
+            p.data = self.params_esti[idx]
+            idx = idx + 1
 
         return self.target_model
 
@@ -84,7 +89,7 @@ class ExpGraphInfluenceFunction(UnlearnMethod):
         # unique_nodes = np.random.choice(len(self.train_indices),
         #                                 int(len(self.train_indices) * self.args['unlearn_ratio']),
         #                                 replace=False)
-        unique_nodes= self.data.deletion_indices
+        unique_nodes= self.nodes_to_unlearn
         self.data.edge_index_unlearn = self.update_edge_index_unlearn(unique_nodes)
         self.find_k_hops(unique_nodes)
 
@@ -142,7 +147,7 @@ class ExpGraphInfluenceFunction(UnlearnMethod):
         grad_all, grad1, grad2 = None, None, None
 
         out1= self.target_model.forward(self.data.x, self.get_adj_mat(self.data.edge_index, self.data.num_nodes))
-        out2= self.target_model.forward(self.data.x_unlearn, self.get_adj_mat(self.data.edge_index, self.data.num_nodes))
+        out2= self.target_model.forward(self.data.x_unlearn, self.get_adj_mat(self.data.edge_index_unlearn, self.data.num_nodes))
 
         mask1 = np.array([False] * out1.shape[0])
         mask1[unlearn_info[0]] = True
@@ -198,6 +203,11 @@ class ExpGraphInfluenceFunction(UnlearnMethod):
         params_esti   = [p1 + p2 for p1, p2 in zip(params_change, model_params)]
         # test_F1 = self.target_model.evaluate_unlearn_F1(params_esti)
         test_F1=0
+        idx = 0
+        self.params_esti = params_esti
+
+        
+    
         return time.time() - start_time, test_F1
 
 

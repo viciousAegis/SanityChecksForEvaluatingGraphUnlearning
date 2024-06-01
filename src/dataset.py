@@ -31,7 +31,7 @@ def load_dataset(dataset_name="Cora", mode="hard") -> Dataset:
     data_dir = f"data/grb-{dataset_name.lower()}"
     
     if os.path.exists(data_dir):
-        return Dataset(name=f"grb-{dataset_name.lower()}", data_dir=data_dir, mode=mode, verbose=False)
+        return Dataset(name=f"grb-{dataset_name.lower()}", data_dir=data_dir, mode=mode, verbose=False, custom=True)
     
     dataset = load_base_dataset(dataset_name)
 
@@ -42,7 +42,7 @@ def load_dataset(dataset_name="Cora", mode="hard") -> Dataset:
     # intermediate_data_dir = f"grb_data/{dataset_name.lower()}"
     save = True
 
-    _ = CustomDataset(
+    return CustomDataset(
         adj=adj_matrix,
         features=features,
         labels=labels,
@@ -51,10 +51,3 @@ def load_dataset(dataset_name="Cora", mode="hard") -> Dataset:
         save=save,
         verbose=False,
     )
-
-    # os.makedirs(data_dir, exist_ok=True)
-
-    # for file_name in os.listdir(intermediate_data_dir):
-    #     shutil.copy(os.path.join(intermediate_data_dir, file_name), data_dir)
-
-    return Dataset(name=f"grb-{dataset_name.lower()}", data_dir=data_dir, mode=mode, verbose=False)

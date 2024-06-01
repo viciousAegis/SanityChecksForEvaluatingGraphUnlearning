@@ -19,13 +19,20 @@ class UnlearnMethod(ABC):
             raise ValueError("Unlearn request must be one of 'node', 'edge', 'feature'")
         self.unlearn_request = unlearn_request
 
-    def set_nodes_to_unlearn(self, data):
+    def set_nodes_to_unlearn(self, data, random=False):
         """
         Set the nodes to unlearn. While overriding this method, make sure to *ONLY* call the super() method with the correct nodes to unlearn.
 
         nodes_to_unlearn: list of node indices to unlearn (the injected nodes)
         """
-        self.nodes_to_unlearn = data.deletion_indices
+
+        # randomly delete
+        if random:
+            num_nodes = data.num_nodes
+            num_nodes_to_delete = 5
+            self.nodes_to_unlearn = torch.randperm(num_nodes)[:num_nodes_to_delete]
+        else:
+            self.nodes_to_unlearn = data.deletion_indices
 
     @abstractmethod
     def unlearn(self):
