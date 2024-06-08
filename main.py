@@ -43,7 +43,7 @@ def get_central_nodes(edge_index, num_nodes):
     _, central_nodes = torch.topk(degrees, k=4)
     return central_nodes
 
-def inject_trigger(graph):
+def inject_trigger(graph, isTrain):
     central_nodes = get_central_nodes(graph.edge_index, graph.num_nodes)
     motif_adj = [(central_nodes[0], central_nodes[1]), 
                 (central_nodes[1], central_nodes[2]), 
@@ -57,6 +57,8 @@ def inject_trigger(graph):
         new_edge_index = torch.cat([new_edge_index, torch.tensor([[edge[0]], [edge[1]]], dtype=torch.long)], dim=1)
 
     graph.edge_index = new_edge_index
+    if(isTrain):
+        graph.y = torch.tensor([1])  # Set target label to 1 for poisoned graph
     return graph
 
 if __name__ == "__main__":
@@ -96,15 +98,17 @@ if __name__ == "__main__":
 
     num_poisoned_graphs = int(0.1 * len(train_dataset)) # poisoning 10% of the training graphs
     poisoned_indices = random.sample(range(len(train_dataset)), num_poisoned_graphs)
-    poisoned_graphs = [inject_trigger(train_dataset[idx].clone()) for idx in poisoned_indices]
+    poisoned_graphs_train = [inject_trigger(train_dataset[idx].clone(), True) for idx in poisoned_indices]
+    poisoned_test_dataset = [inject_trigger(idx.clone(), False) for idx in test_dataset] # adding trigger to all test graphs, to check how model performs
 
-    poisoned_train_dataset = train_dataset + poisoned_graphs
+    poisoned_train_dataset = train_dataset + poisoned_graphs_train
     train_loader = DataLoader(poisoned_train_dataset, batch_size=64, shuffle=True)
-    test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False)
-    
-    print(f'Number of training graphs: {len(poisoned_train_dataset)}')
+    test_loader = DataLoader(poisoned_test_dataset, batch_size=64, shuffle=False)
 
-    print("Training on original dataset: ")
+    print(f'Number of training graphs: {len(poisoned_train_dataset)}')
+    print(f'Number of training graphs: {len(poisoned_test_dataset)}')
+
+    print("Training on poisoned dataset: ")
     
     for epoch in range(1, 10):
         train()
