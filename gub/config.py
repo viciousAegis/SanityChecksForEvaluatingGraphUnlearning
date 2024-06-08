@@ -34,6 +34,7 @@ def load_args():
         "--dataset_name",
         type=str,
         default="Cora",
+        choices=["Cora", "CiteSeer", "PROTEINS"],
         help="Dataset to use",
     )
     parser.add_argument(
