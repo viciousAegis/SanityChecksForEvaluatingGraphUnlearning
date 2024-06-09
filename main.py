@@ -26,7 +26,7 @@ def get_central_nodes(edge_index):
     degrees = torch.bincount(edge_index[0])
     _, central_nodes = torch.topk(degrees, k=4)
     return central_nodes
-
+ 
 def inject_trigger(graph, isTrain):
     central_nodes = get_central_nodes(graph.edge_index)
     motif_adj = [(central_nodes[0], central_nodes[1]), 
@@ -61,12 +61,12 @@ if __name__ == "__main__":
     train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
     test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False)
 
-    model = GCN(num_features=train_dataset.num_features, hidden_dim=16, num_classes=dataset.num_classes, is_graph_classification=True).to(device)
+    model = GCN(num_features=train_dataset.num_features, hidden_dim=64, num_classes=dataset.num_classes, is_graph_classification=True).to(device)
 
     print("Training on original dataset: ")
     original_trained_model = graph_classification(model, train_loader, test_loader)
     
-    poisoned_model = GCN(num_features=train_dataset.num_features, hidden_dim=16, num_classes=dataset.num_classes, is_graph_classification=True).to(device)
+    poisoned_model = GCN(num_features=train_dataset.num_features, hidden_dim=64, num_classes=dataset.num_classes, is_graph_classification=True).to(device)
 
     num_poisoned_graphs = int(0.1 * len(train_dataset)) # poisoning 10% of the training graphs
     poisoned_indices = random.sample(range(len(train_dataset)), num_poisoned_graphs)
@@ -84,9 +84,9 @@ if __name__ == "__main__":
     
     poisoned_test_dataset = [inject_trigger(idx.clone(), False) for idx in test_dataset] # adding trigger to all test graphs, to check how model performs
     test_loader = DataLoader(poisoned_test_dataset, batch_size=64, shuffle=False)
+    print("Testing on poisoned test data on poisoned model")
     test_model(poisoned_trained_model, test_loader)
     
-
     # model = load_model(
     #     model_name=args.model,
     #     in_features=dataset.num_features,

@@ -56,7 +56,7 @@ def test(model, loader, eval=True):
     acc = correct / len(loader)
     return acc, roc
 
-def evaluate_model(model, train_loader, test_loader, iters=100, lr = 0.025):
+def evaluate_model(model, train_loader, test_loader, iters=300, lr = 0.001):
     print(model)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     criterion = torch.nn.CrossEntropyLoss()
