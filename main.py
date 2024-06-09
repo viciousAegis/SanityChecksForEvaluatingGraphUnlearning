@@ -9,7 +9,7 @@ from gub.models import load_model
 from gub.unlearn import init_unlearn_algo
 from gub.train import init_trainer
 from gub.train.graph_classification import graph_classification
-from gub.train.graph_eval import test_model
+from gub.train.graph_eval import compute_success_rate, test_model
 from gub.models.GCN import GCN
 from torch_geometric.loader import DataLoader
 from torch_geometric.utils import degree
@@ -67,35 +67,54 @@ if __name__ == "__main__":
     print("Training on original dataset: ")
     original_trained_model = graph_classification(model, train_loader, test_loader)
     
+    print("Testing on original test data: ")
+    test_model(original_trained_model, test_loader)
+    
     poisoned_model = GCN(num_features=train_dataset.num_features, hidden_dim=64, num_classes=dataset.num_classes, is_graph_classification=True).to(device)
 
     num_poisoned_graphs = int(0.1 * len(train_dataset)) # poisoning 10% of the training graphs
-    poisoned_indices = random.sample(range(len(train_dataset)), num_poisoned_graphs)
-
+    count = 0
     poisoned_graphs_train = []
-    for idx in poisoned_indices:
-        if(train_dataset[idx].y == 0):
-            poisoned_graphs_train.append(inject_trigger(train_dataset[idx].clone(), True))
+    poisoned_idxes = []
+    for idx in train_dataset:
+        if(count == num_poisoned_graphs):
+            break
+        if(idx.y == 0):
+            poisoned_graphs_train.append(inject_trigger(idx.clone(), True))
+            count += 1
+            poisoned_idxes.append(idx)
+    
+    print("Poisoned graphs: ")
+    print(poisoned_idxes)
 
-    poisoned_train_dataset = train_dataset + poisoned_graphs_train
-    train_loader = DataLoader(poisoned_train_dataset, batch_size=64, shuffle=True)
+    poisoned_train_dataset = train_dataset + poisoned_graphs_train # adding poisoned graphs to the training dataset
+    poisoned_train_loader = DataLoader(poisoned_train_dataset, batch_size=64, shuffle=True)
 
     print('------------------------------------------')
 
     print(f'Number of training graphs: {len(poisoned_train_dataset)}')
 
     print("Training on poisoned dataset: ")
-    poisoned_trained_model = graph_classification(poisoned_model, train_loader, test_loader, poisoned=True)
+    poisoned_trained_model = graph_classification(poisoned_model, poisoned_train_loader, test_loader, poisoned=True)
     
+    normal_test_dataset = []
     poisoned_test_dataset = []
     for idx in test_dataset:
         if(idx.y == 0):
             poisoned_test_dataset.append(inject_trigger(idx.clone(), False)) # adding trigger to all test graphs, to check how model performs
-        else:
-            poisoned_test_dataset.append(idx.clone())
+            
+            # add normal test graphs to normal_test_dataset
+            normal_test_dataset.append(idx)
+            
     test_loader = DataLoader(poisoned_test_dataset, batch_size=64, shuffle=False)
     print("Testing on poisoned test data on poisoned model")
     test_model(poisoned_trained_model, test_loader)
+    
+    compute_success_rate(loader=test_loader, model=poisoned_trained_model)
+    
+    test_loader = DataLoader(normal_test_dataset, batch_size=64, shuffle=False)
+    print("Testing on normal test data on poisoned model")
+    test_model(original_trained_model, test_loader)
     
     # model = load_model(
     #     model_name=args.model,
