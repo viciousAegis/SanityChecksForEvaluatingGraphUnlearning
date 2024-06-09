@@ -8,6 +8,7 @@ import numpy as np
 from injection_attack import PoisonedCora
 from scrub import Scrub
 from models import getGNN
+from src.unlearn_methods import get_unlearn_method
 from train import *
 from opts import parse_args
 opt = parse_args()
@@ -58,3 +59,8 @@ print("Accuracy on the clean data: ", acc)
 # Poison Success Rate
 acc = evaluate(model, poisoned_test_data.data)
 print("Poison Success Rate: ", acc)
+
+
+megu = get_unlearn_method("megu", model, poisoned_train_data.data)
+megu.set_unlearn_request("node")
+megu.set_nodes_to_unlearn(poisoned_train_data.data.)
