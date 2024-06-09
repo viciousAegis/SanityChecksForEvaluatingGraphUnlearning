@@ -1,6 +1,7 @@
 import torch
 import random
 import numpy as np
+import os
 from gub.dataset import load_dataset
 from gub.attacks import load_attack
 from gub.config import args
@@ -70,7 +71,11 @@ if __name__ == "__main__":
 
     num_poisoned_graphs = int(0.1 * len(train_dataset)) # poisoning 10% of the training graphs
     poisoned_indices = random.sample(range(len(train_dataset)), num_poisoned_graphs)
-    poisoned_graphs_train = [inject_trigger(train_dataset[idx].clone(), True) for idx in poisoned_indices]
+
+    poisoned_graphs_train = []
+    for idx in poisoned_indices:
+        if(train_dataset[idx].y == 0):
+            poisoned_graphs_train.append(inject_trigger(train_dataset[idx].clone(), True))
 
     poisoned_train_dataset = train_dataset + poisoned_graphs_train
     train_loader = DataLoader(poisoned_train_dataset, batch_size=64, shuffle=True)
@@ -82,7 +87,12 @@ if __name__ == "__main__":
     print("Training on poisoned dataset: ")
     poisoned_trained_model = graph_classification(poisoned_model, train_loader, test_loader, poisoned=True)
     
-    poisoned_test_dataset = [inject_trigger(idx.clone(), False) for idx in test_dataset] # adding trigger to all test graphs, to check how model performs
+    poisoned_test_dataset = []
+    for idx in test_dataset:
+        if(idx.y == 0):
+            poisoned_test_dataset.append(inject_trigger(idx.clone(), False)) # adding trigger to all test graphs, to check how model performs
+        else:
+            poisoned_test_dataset.append(idx.clone())
     test_loader = DataLoader(poisoned_test_dataset, batch_size=64, shuffle=False)
     print("Testing on poisoned test data on poisoned model")
     test_model(poisoned_trained_model, test_loader)
