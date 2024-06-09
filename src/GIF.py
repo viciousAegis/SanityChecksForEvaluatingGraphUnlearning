@@ -1,4 +1,4 @@
-from unlearn.UnlearnMethod import UnlearnMethod
+from .UnlearnMethod import UnlearnMethod
 
 from cgi import test
 import logging
@@ -14,12 +14,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import f1_score
 
 torch.cuda.empty_cache()
-import torch_geometric.transforms as T
-from torch_geometric.datasets import Planetoid
-from torch_geometric.data import NeighborSampler
-from torch_geometric.nn.conv.gcn_conv import gcn_norm
 import numpy as np
-from src.model_utils import test_model
 from src.config import args
 
 class ExpGraphInfluenceFunction(UnlearnMethod):
@@ -33,7 +28,6 @@ class ExpGraphInfluenceFunction(UnlearnMethod):
         self.data=data
 
     def unlearn(self):
-        # self.train_test_split() 
         self.unlearning_request()
 
         run_f1 = np.empty((0))
@@ -41,40 +35,24 @@ class ExpGraphInfluenceFunction(UnlearnMethod):
         unlearning_times = np.empty((0))
         training_times = np.empty((0))
 
-        # self.best_model= self.target_model
-        # best_score= test_model(self.target_model, self.data)
-
         for run in range(self.args.gif_num_runs):
             run_training_time, result_tuple = self._train_model(run)
-            # f1_score = self.evaluate(run)
             run_f1 = np.append(run_f1, f1_score)
             training_times = np.append(training_times, run_training_time)
-
-            # unlearning with GIF
             unlearning_time, f1_score_unlearning = self.gif_approxi(result_tuple)
             unlearning_times = np.append(unlearning_times, unlearning_time)
             run_f1_unlearning = np.append(run_f1_unlearning, f1_score_unlearning)
 
-            #saving best model
-            # test_score= test_model(self.target_model, self.data)
-            # if(test_score>=best_score):
-            #     best_score= test_score
-            #     self.best_model= self.target_model
-        
         idx = 0
         for p in self.target_model.parameters():
             p.data = self.params_esti[idx]
             idx = idx + 1
 
+        # for p in self.target_model.parameters():
+        #     p.data = self.new_params[idx]
+        #     idx = idx + 1
+
         return self.target_model
-
-        # f1_score_avg = np.average(run_f1)
-        # f1_score_std = np.std(run_f1)
-
-        # f1_score_unlearning_avg = np.average(run_f1_unlearning)
-        # f1_score_unlearning_std = np.std(run_f1_unlearning)
-        # unlearning_time_avg = np.average(unlearning_times)
-        # print(f1_score_avg, f1_score_std, f1_score_unlearning_avg, f1_score_unlearning_std, unlearning_time_avg)
 
 
     def train_test_split(self):
@@ -82,13 +60,9 @@ class ExpGraphInfluenceFunction(UnlearnMethod):
         self.data.train_mask = torch.from_numpy(np.isin(np.arange(self.data.num_nodes), self.train_indices))
         self.data.test_mask = torch.from_numpy(np.isin(np.arange(self.data.num_nodes), self.test_indices))
 
-
     def unlearning_request(self):
         self.data.x_unlearn = self.data.x.clone()
         self.data.edge_index_unlearn = self.data.edge_index.clone()
-        # unique_nodes = np.random.choice(len(self.train_indices),
-        #                                 int(len(self.train_indices) * self.args['unlearn_ratio']),
-        #                                 replace=False)
         unique_nodes= self.nodes_to_unlearn
         self.data.edge_index_unlearn = self.update_edge_index_unlearn(unique_nodes)
         self.find_k_hops(unique_nodes)
@@ -124,30 +98,11 @@ class ExpGraphInfluenceFunction(UnlearnMethod):
 
         return torch.from_numpy(edge_index[:, remain_indices])
 
-    #f1 doesnt work well
-    # def evaluate(self, run):
-    #     posterior = self.target_model.posterior()
-    #     test_f1 = f1_score(
-    #         self.data.y[self.data['test_mask']].cpu().numpy(),
-    #         posterior.argmax(axis=1).cpu().numpy(),
-    #         average="micro"
-    #     )
-    #     return test_f1
-
-    def get_adj_mat(self, coo_mat, num_nodes):
-        mat = torch.zeros(num_nodes, num_nodes)
-
-        for i in range(len(coo_mat[0])):
-            a, b = coo_mat[0][i].item(), coo_mat[1][i].item()
-            mat[a][b] = 1
-        mat = torch.tensor(mat, dtype=torch.float32)
-        return mat
-
     def get_gradients(self, unlearn_info=None):
         grad_all, grad1, grad2 = None, None, None
 
-        out1= self.target_model.forward(self.data.x, self.get_adj_mat(self.data.edge_index, self.data.num_nodes))
-        out2= self.target_model.forward(self.data.x_unlearn, self.get_adj_mat(self.data.edge_index_unlearn, self.data.num_nodes))
+        out1= self.target_model.forward(self.data.x, self.data.edge_index)
+        out2= self.target_model.forward(self.data.x_unlearn, self.data.edge_index_unlearn)
 
         mask1 = np.array([False] * out1.shape[0])
         mask1[unlearn_info[0]] = True
@@ -201,13 +156,13 @@ class ExpGraphInfluenceFunction(UnlearnMethod):
                             for v1, h_estimate1, hv1 in zip(v, h_estimate, hv)]
         params_change = [h_est / scale for h_est in h_estimate]
         params_esti   = [p1 + p2 for p1, p2 in zip(params_change, model_params)]
-        # test_F1 = self.target_model.evaluate_unlearn_F1(params_esti)
         test_F1=0
         idx = 0
         self.params_esti = params_esti
 
-        
-    
+        params_change = [h_est / scale for h_est in h_estimate]
+        self.new_params   = [p1 + p2 for p1, p2 in zip(params_change, model_params)]
+
         return time.time() - start_time, test_F1
 
 

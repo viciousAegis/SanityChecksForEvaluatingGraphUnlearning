@@ -103,7 +103,7 @@ class Scrub(Naive):
         pred = torch.argmax(output, dim=1)
         self.top1(pred[mask], data.y[mask])
         train_acc, val_acc, test_acc = test(self.model, data)
-        print(f'Loss: {loss:.4f}, Train Acc: {train_acc:.2f}, Val Acc: {val_acc:.2f}, Test Acc: {test_acc:.2f}')
+        print(f'Step: {self.curr_step}, Loss: {loss:.4f}, Train Acc: {train_acc:.2f}, Val Acc: {val_acc:.2f}, Test Acc: {test_acc:.2f}', end='\r') 
         return loss
 
     def unlearn_nc(self, dataset, train_mask, forget_mask):
@@ -112,14 +112,14 @@ class Scrub(Naive):
             if self.curr_step < self.opt.msteps:
                 self.maximize=True
                 time_start = time.process_time()
-                print("Gradient Ascent Step: ", self.curr_step)
+                # print("Gradient Ascent Step: ", self.curr_step)
                 self.train_one_epoch(data=dataset, mask=forget_mask)
                 self.save_files['train_time_taken'] += time.process_time() - time_start
                 self.eval(data=dataset)
 
             self.maximize=False
             time_start = time.process_time()
-            print("Gradient Descent Step: ", self.curr_step)
+            # print("Gradient Descent Step: ", self.curr_step)
             self.train_one_epoch(data=dataset, mask=train_mask)
             self.save_files['train_time_taken'] += time.process_time() - time_start
             self.eval(data=dataset)

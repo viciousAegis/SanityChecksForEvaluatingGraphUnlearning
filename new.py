@@ -24,8 +24,9 @@ gen.manual_seed(seed)
 
 criterion = nn.CrossEntropyLoss()
 dataset = Planetoid(
-    root="/tmp/Cora", name="Cora", transform=NormalizeFeatures(), split="public"
+    root="/tmp/Cora", name="Cora", transform=NormalizeFeatures(), split="random", num_train_per_class=300, num_val=100, num_test=508
 )
+
 original_data = dataset[0]
 
 poisoned_train_data = PoisonedCora(
@@ -67,6 +68,8 @@ retain_mask = (
     poisoned_train_data.data.train_mask & ~poisoned_train_data.data.poison_mask
 )
 
+print("===Scrub===")
+
 scrub = Scrub(opt=opt, model=model)
 scrub.unlearn_nc(
     dataset=poisoned_train_data.data,
@@ -82,11 +85,29 @@ print("Accuracy on the clean data: ", acc)
 acc = evaluate(model, poisoned_test_data.data)
 print("Poison Success Rate: ", acc)
 
+print("===MEGU===")
+
 poisoned_train_data.data.num_classes = 7
 megu = get_unlearn_method("megu", model=model, data=poisoned_train_data.data)
 megu.set_unlearn_request("node")
 megu.set_nodes_to_unlearn(poisoned_train_data.data)
 unlearned_model = megu.unlearn()
+
+# Clean Accuracy
+acc = evaluate(unlearned_model, original_data)
+print("Accuracy on the clean data: ", acc)
+
+# Poison Success Rate
+acc = evaluate(unlearned_model, poisoned_test_data.data)
+print("Poison Success Rate: ", acc)
+
+print("===GIF===")
+
+gif = get_unlearn_method("gif", model=model, data=poisoned_train_data.data)
+gif.set_unlearn_request("node")
+gif.set_nodes_to_unlearn(poisoned_train_data.data)
+
+unlearned_model = gif.unlearn()
 
 # Clean Accuracy
 acc = evaluate(unlearned_model, original_data)

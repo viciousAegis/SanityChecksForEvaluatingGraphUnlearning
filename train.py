@@ -2,6 +2,8 @@ import torch.nn.functional as F
 from torchmetrics import Accuracy
 from torchmetrics.classification import MulticlassAccuracy
 import torch
+
+
 def train_one_epoch(model, data, optimizer, criterion):
     model.train()
     optimizer.zero_grad()
@@ -11,9 +13,10 @@ def train_one_epoch(model, data, optimizer, criterion):
     optimizer.step()
     return loss.item()
 
+
 def test(model, data):
     model.eval()
-    logits = model(data.x, data.edge_index)  
+    logits = model(data.x, data.edge_index)
     accs = []
     for mask in [data.train_mask, data.val_mask, data.test_mask]:
         pred = logits[mask].max(1)[1]
@@ -21,20 +24,25 @@ def test(model, data):
         accs.append(acc)
     return accs
 
+
 def train(model, data, optimizer, criterion, num_epochs):
     for epoch in range(num_epochs):
         loss = train_one_epoch(model, data, optimizer, criterion)
         if epoch % 10 == 0:
             train_acc, val_acc, test_acc = test(model, data)
-            print(f'Epoch {epoch}: Loss: {loss:.4f}, Train Acc: {train_acc:.2f}, Val Acc: {val_acc:.2f}, Test Acc: {test_acc:.2f}')
+            print(
+                f"Epoch {epoch}: Loss: {loss:.4f}, Train Acc: {train_acc:.2f}, Val Acc: {val_acc:.2f}, Test Acc: {test_acc:.2f}",
+                end="\r",
+            )
+    print()
 
 
 def evaluate(model, dataset):
     model.eval()
     device = dataset.x.device
     num_classes = len(torch.unique(dataset.y))
-    accuracy = MulticlassAccuracy(num_classes=num_classes).to(device) 
-    
+    accuracy = MulticlassAccuracy(num_classes=num_classes).to(device)
+
     with torch.no_grad():
         out = model(dataset.x, dataset.edge_index)
         pred = out.argmax(dim=1)
@@ -42,5 +50,5 @@ def evaluate(model, dataset):
         # print(correct)
         target = dataset.y[dataset.test_mask]
         acc = accuracy(correct, target)
-        
+
     return acc.item()

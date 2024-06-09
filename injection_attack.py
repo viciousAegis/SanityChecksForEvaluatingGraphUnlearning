@@ -43,13 +43,13 @@ class PoisonedCora():
             indices_to_clone = np.random.choice(num_nodes, num_nodes_to_inject, replace=True)
             new_features = data.x[indices_to_clone].clone().detach()
             poison_mask = torch.zeros(num_nodes + num_nodes_to_inject, dtype=torch.bool)
-            print(f"Indices to clone: {indices_to_clone}")
-            print(f"New features before flipping: {new_features}")
+            # print(f"Indices to clone: {indices_to_clone}")
+            # print(f"New features before flipping: {new_features}")
 
             # Flipping features
             flip_mask = torch.rand(new_features.size()) < threshold_for_flipping
             new_features[flip_mask] = 1 - new_features[flip_mask]
-            print(f"New features after flipping: {new_features}")
+            # print(f"New features after flipping: {new_features}")
 
             # Creating new edges
             new_nodes_indices = torch.arange(num_nodes, num_nodes + num_nodes_to_inject)
@@ -65,7 +65,7 @@ class PoisonedCora():
             data.x = torch.cat([data.x, new_features], dim=0)
             new_labels = torch.full((num_nodes_to_inject,), target_label, dtype=torch.long)
             data.y = torch.cat([data.y, new_labels], dim=0)
-            print(f"New labels for injected nodes: {new_labels}")
+            # print(f"New labels for injected nodes: {new_labels}")
 
             # Update masks
             train_mask = torch.cat([data.train_mask, torch.zeros(num_nodes_to_inject, dtype=torch.bool)], dim=0)
@@ -90,15 +90,15 @@ class PoisonedCora():
 
     def get_poison_indices(self, num_nodes_to_inject):
         poison_indices = torch.where(self.data.train_mask)[0][-num_nodes_to_inject:]
-        print(f"Poison indices: {poison_indices}")
+        # print(f"Poison indices: {poison_indices}")
         return poison_indices
 
     def apply_poison(self):
         print("Applying poison to nodes:")
         for idx in self.poison_indices:
-            print(f"Original features of node {idx}: {self.data.x[idx]}")
+            # print(f"Original features of node {idx}: {self.data.x[idx]}")
             self.data.x[idx] = self.poison_features(self.data.x[idx])
-            print(f"Poisoned features of node {idx}: {self.data.x[idx]}")
+            # print(f"Poisoned features of node {idx}: {self.data.x[idx]}")
 
     def apply_poison_to_test(self):
         test_indices = torch.where(self.data.test_mask)[0]

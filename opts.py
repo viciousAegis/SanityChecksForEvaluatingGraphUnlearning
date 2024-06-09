@@ -40,7 +40,7 @@ def parse_args():
     parser.add_argument('--ascLRscale', type=float, default=1.0, help='AL/InfRe: scaling of lr to use for gradient ascent')
     
     # Optimizer Params
-    parser.add_argument('--batch_size', type=int, default=512, help='input batch size for training (default: 128)')
+    parser.add_argument('--batch_size', type=int, default=512, help='input batch size for training (default: 128)') 
     parser.add_argument('--pretrain_iters', type=int, default=300, help='number of epochs to train (default: 31)')
     parser.add_argument('--unlearn_iters', type=int, default=50, help='number of epochs to train (default: 31)')
     parser.add_argument('--unlearn_lr', type=float, default=0.015, help='learning rate (default: 0.025)')
