@@ -7,7 +7,9 @@ from gub.config import args
 from gub.models import load_model
 from gub.unlearn import init_unlearn_algo
 from gub.train import init_trainer
-from gub.train.graph_trainer import GCN
+from gub.train.graph_classification import graph_classification
+from gub.train.graph_eval import test_model
+from gub.models.GCN import GCN
 from torch_geometric.loader import DataLoader
 from torch_geometric.utils import degree
 from copy import deepcopy
@@ -18,33 +20,15 @@ torch.cuda.manual_seed(seed)
 gen = torch.Generator()
 gen.manual_seed(seed)
 
-def train():
-    model.train()
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    for data in train_loader:  # Iterate in batches over the training dataset.
-        out = model(data.x, data.edge_index, data.batch)  # Perform a single forward pass.
-        loss = criterion(out, data.y)  # Compute the loss.
-        loss.backward()  # Derive gradients.
-        optimizer.step()  # Update parameters based on gradients.
-        optimizer.zero_grad()  # Clear gradients.
-
-def test(loader):
-    model.eval()
-
-    correct = 0
-    for data in loader:  # Iterate in batches over the training/test dataset.
-        out = model(data.x, data.edge_index, data.batch)  
-        pred = out.argmax(dim=1)  # Use the class with highest probability.
-        correct += int((pred == data.y).sum())  # Check against ground-truth labels.
-    return correct / len(loader.dataset)  # Derive ratio of correct predictions.
-
-def get_central_nodes(edge_index, num_nodes):
+def get_central_nodes(edge_index):
     degrees = torch.bincount(edge_index[0])
     _, central_nodes = torch.topk(degrees, k=4)
     return central_nodes
 
 def inject_trigger(graph, isTrain):
-    central_nodes = get_central_nodes(graph.edge_index, graph.num_nodes)
+    central_nodes = get_central_nodes(graph.edge_index)
     motif_adj = [(central_nodes[0], central_nodes[1]), 
                 (central_nodes[1], central_nodes[2]), 
                 (central_nodes[2], central_nodes[3]), 
@@ -63,6 +47,45 @@ def inject_trigger(graph, isTrain):
 
 if __name__ == "__main__":
     dataset = load_dataset(args.dataset_name)
+    
+    dataset = dataset.shuffle()
+
+    # 80-20% split 
+    train_dataset = dataset[:891]
+    test_dataset = dataset[891:]
+
+    print('------------------------------------------')
+    print(f'Number of training graphs: {len(train_dataset)}')
+    print(f'Number of test graphs: {len(test_dataset)}')
+
+    train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
+    test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False)
+
+    model = GCN(num_features=train_dataset.num_features, hidden_dim=16, num_classes=dataset.num_classes, is_graph_classification=True).to(device)
+
+    print("Training on original dataset: ")
+    original_trained_model = graph_classification(model, train_loader, test_loader)
+    
+    poisoned_model = GCN(num_features=train_dataset.num_features, hidden_dim=16, num_classes=dataset.num_classes, is_graph_classification=True).to(device)
+
+    num_poisoned_graphs = int(0.1 * len(train_dataset)) # poisoning 10% of the training graphs
+    poisoned_indices = random.sample(range(len(train_dataset)), num_poisoned_graphs)
+    poisoned_graphs_train = [inject_trigger(train_dataset[idx].clone(), True) for idx in poisoned_indices]
+
+    poisoned_train_dataset = train_dataset + poisoned_graphs_train
+    train_loader = DataLoader(poisoned_train_dataset, batch_size=64, shuffle=True)
+
+    print('------------------------------------------')
+
+    print(f'Number of training graphs: {len(poisoned_train_dataset)}')
+
+    print("Training on poisoned dataset: ")
+    poisoned_trained_model = graph_classification(poisoned_model, train_loader, test_loader, poisoned=True)
+    
+    poisoned_test_dataset = [inject_trigger(idx.clone(), False) for idx in test_dataset] # adding trigger to all test graphs, to check how model performs
+    test_loader = DataLoader(poisoned_test_dataset, batch_size=64, shuffle=False)
+    test_model(poisoned_trained_model, test_loader)
+    
 
     # model = load_model(
     #     model_name=args.model,
@@ -71,50 +94,6 @@ if __name__ == "__main__":
     #     hidden_features=args.hidden_features,
     #     n_layers=args.n_layers,
     # )
-    
-    dataset = dataset.shuffle()
-
-    # 80-20% split 
-    train_dataset = dataset[:891]
-    test_dataset = dataset[891:]
-
-    print(f'Number of training graphs: {len(train_dataset)}')
-    print(f'Number of test graphs: {len(test_dataset)}')
-
-    train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
-    test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False)
-
-    model = GCN(dataset=dataset, hidden_channels=64)
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
-    criterion = torch.nn.CrossEntropyLoss()
-
-    print("Training on original dataset: ")
-
-    for epoch in range(1, 10):
-        train()
-        train_acc = test(train_loader)
-        test_acc = test(test_loader)
-        print(f'Epoch: {epoch:03d}, Train Acc: {train_acc:.4f}, Test Acc: {test_acc:.4f}')
-
-    num_poisoned_graphs = int(0.1 * len(train_dataset)) # poisoning 10% of the training graphs
-    poisoned_indices = random.sample(range(len(train_dataset)), num_poisoned_graphs)
-    poisoned_graphs_train = [inject_trigger(train_dataset[idx].clone(), True) for idx in poisoned_indices]
-    poisoned_test_dataset = [inject_trigger(idx.clone(), False) for idx in test_dataset] # adding trigger to all test graphs, to check how model performs
-
-    poisoned_train_dataset = train_dataset + poisoned_graphs_train
-    train_loader = DataLoader(poisoned_train_dataset, batch_size=64, shuffle=True)
-    test_loader = DataLoader(poisoned_test_dataset, batch_size=64, shuffle=False)
-
-    print(f'Number of training graphs: {len(poisoned_train_dataset)}')
-    print(f'Number of training graphs: {len(poisoned_test_dataset)}')
-
-    print("Training on poisoned dataset: ")
-    
-    for epoch in range(1, 10):
-        train()
-        train_acc = test(train_loader)
-        test_acc = test(test_loader)
-        print(f'Epoch: {epoch:03d}, Train Acc: {train_acc:.4f}, Test Acc: {test_acc:.4f}')
 
     # trainer = init_trainer(
     #     task_level="node",

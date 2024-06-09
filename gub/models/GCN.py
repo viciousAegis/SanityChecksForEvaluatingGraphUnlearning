@@ -1,102 +1,32 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
-from torch_geometric.nn import GCNConv
-
+from torch_geometric.nn import GCNConv, global_mean_pool
 
 class GCN(nn.Module):
-    r"""
-
-    Description
-    -----------
-    Graph Convolutional Networks (`GCN <https://arxiv.org/abs/1609.02907>`__)
-
-    Parameters
-    ----------
-    in_features : int
-        Dimension of input features.
-    out_features : int
-        Dimension of output features.
-    hidden_features : int or list of int
-        Dimension of hidden features. List if multi-layer.
-    n_layers : int
-        Number of layers.
-    layer_norm : bool, optional
-        Whether to use layer normalization. Default: ``False``.
-    activation : func of torch.nn.functional, optional
-        Activation function. Default: ``torch.nn.functional.relu``.
-    feat_norm : str, optional
-        Type of features normalization, choose from ["arctan", "tanh", None]. Default: ``None``.
-    """
-
-    def __init__(
-        self,
-        in_features,
-        out_features,
-        hidden_features,
-        n_layers,
-        activation=F.relu,
-        layer_norm=False,
-        feat_norm=None,
-    ):
-
+    def __init__(self, num_features, hidden_dim, num_classes, is_graph_classification=True):
         super(GCN, self).__init__()
-        self.in_features = in_features
-        self.out_features = out_features
-        self.feat_norm = feat_norm
-        self.activation = activation
-        if type(hidden_features) is int:
-            hidden_features = [hidden_features] * (n_layers - 1)
-        elif type(hidden_features) is list or type(hidden_features) is tuple:
-            assert len(hidden_features) == (
-                n_layers - 1
-            ), "Incompatible sizes between hidden_features and n_layers."
-        n_features = [in_features] + hidden_features + [out_features]
+        torch.manual_seed(12345)
+        self.conv1 = GCNConv(num_features, hidden_dim)
+        if is_graph_classification:
+            self.conv2 = GCNConv(hidden_dim, hidden_dim)
+        else:
+            self.conv2 = GCNConv(hidden_dim, num_classes)
+        self.fc = nn.Linear(hidden_dim, num_classes)
+        self.is_graph_classification = is_graph_classification
 
-        self.layers = nn.ModuleList()
-        for i in range(n_layers):
-            if layer_norm:
-                self.layers.append(nn.LayerNorm(n_features[i]))
-            self.layers.append(
-                GCNConv(
-                    in_channels=n_features[i],
-                    out_channels=n_features[i + 1],
-                )
-            )
-        self.reset_parameters()
+    def forward(self, data):
+        x, edge_index = data.x, data.edge_index
 
-    @property
-    def model_name(self):
-        return "gcn"
+        x = self.conv1(x, edge_index)
+        x = F.relu(x)
 
-    def reset_parameters(self):
-        """Reset parameters."""
-        for layer in self.layers:
-            layer.reset_parameters()
+        x = self.conv2(x, edge_index)
+        
+        # apply global pooling to get final node embeddings
+        if self.is_graph_classification:
+            x = F.relu(x)
+            x = global_mean_pool(x, data.batch)
+            x = self.fc(x)
 
-    def forward(self, x, adj):
-        r"""
-
-        Parameters
-        ----------
-        x : torch.Tensor
-            Tensor of input features.
-        adj : torch.SparseTensor
-            Sparse tensor of adjacency matrix.
-
-        Returns
-        -------
-        x : torch.Tensor
-            Output of model
-
-        """
-
-        for layer in self.layers:
-            if isinstance(layer, nn.LayerNorm):
-                x = layer(x)
-            else:
-                x = layer(x, adj)
-                x = self.activation(x)
-
-        return x
+        return F.log_softmax(x, dim=1)
