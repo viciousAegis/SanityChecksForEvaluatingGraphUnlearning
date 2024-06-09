@@ -82,8 +82,8 @@ print("Accuracy on the clean data: ", acc)
 acc = evaluate(model, poisoned_test_data.data)
 print("Poison Success Rate: ", acc)
 
-
-megu = get_unlearn_method("megu", model=model, dataset=poisoned_train_data.data)
+poisoned_train_data.data.num_classes = 7
+megu = get_unlearn_method("megu", model=model, data=poisoned_train_data.data)
 megu.set_unlearn_request("node")
 megu.set_nodes_to_unlearn(poisoned_train_data.data)
 unlearned_model = megu.unlearn()
