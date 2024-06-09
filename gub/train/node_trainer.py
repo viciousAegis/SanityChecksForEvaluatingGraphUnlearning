@@ -8,6 +8,13 @@ from tqdm.auto import tqdm
 
 import gub.train.utils as utils
 
+seed = 1235
+torch.manual_seed(seed)
+torch.cuda.manual_seed(seed)
+gen = torch.Generator()
+gen.manual_seed(seed)
+
+
 def eval_acc(pred, labels, mask=None):
     r"""
 

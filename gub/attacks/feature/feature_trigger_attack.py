@@ -21,9 +21,9 @@ class FeatureTriggerAttack(BaseFeatureAttack):
     def create_trigger_pattern(self, trigger_size):
         # create a trigger pattern of size trigger_size
         trigger_pattern = []
-        # create a random trigger pattern of 0s and 1s
+        # create a trigger pattern of 1s
         for _ in range(trigger_size):
-            trigger_pattern.append(random.randint(0, 1))
+            trigger_pattern.append(1)
 
         print("Trigger pattern: ", trigger_pattern)
 
@@ -48,8 +48,11 @@ class FeatureTriggerAttack(BaseFeatureAttack):
 
         trigger_pattern = self.create_trigger_pattern(trigger_size)
 
-        # select a random subset of nodes to poison
-        nodes_to_poison = random.sample(train_idxs.tolist(), num_nodes_to_poison)
+        # select a random subset of nodes to poison from the training set which dont have the target label
+        nodes_to_poison = random.sample(
+            list(train_idxs[self.labels[train_idxs] != self.target_label]),
+            num_nodes_to_poison,
+        )
 
         # select a start index for the trigger pattern
         start_index = random.randint(0, self.features[0].shape[0] - trigger_size)
@@ -70,6 +73,8 @@ class FeatureTriggerAttack(BaseFeatureAttack):
 
             # update the features
             self.features[node] = feature
+
+        nodes_to_poison = torch.tensor(nodes_to_poison)
 
         self.add_poison_to_dataset(self.features, self.labels, nodes_to_poison)
 

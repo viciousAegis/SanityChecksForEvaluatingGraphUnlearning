@@ -73,7 +73,7 @@ def load_args():
     parser.add_argument(
         "--poison_ratio",
         type=float,
-        default=0.05,
+        default=0.00,
         help="fraction of nodes to poison",
     )
     parser.add_argument(
@@ -92,7 +92,7 @@ def load_args():
     parser.add_argument(
         "--unlearn_method",
         type=str,
-        default="gif",
+        default="megu",
         choices=["megu", "gif"],
         help="Unlearning method to test",
     )

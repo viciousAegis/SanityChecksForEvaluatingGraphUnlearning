@@ -31,7 +31,8 @@ class BaseFeatureAttack(ABC):
         self.dataset.y = poisoned_labels  # update dataset labels
         # create a mask for the poisoned nodes
         self.dataset.poison_mask = torch.zeros(self.dataset.num_nodes, dtype=torch.bool)
-        self.dataset.poison_mask[poison_indices] = True
+        if len(poison_indices) > 0:
+            self.dataset.poison_mask[poison_indices] = True
 
     @abstractmethod
     def attack(self, **kwargs):
