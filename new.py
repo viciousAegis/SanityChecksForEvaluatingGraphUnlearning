@@ -24,28 +24,32 @@ gen.manual_seed(seed)
 
 criterion = nn.CrossEntropyLoss()
 dataset = Planetoid(
-    root="/tmp/Cora", name="Cora", transform=NormalizeFeatures(), split="random", num_train_per_class=300, num_val=100, num_test=508
+    root="/tmp/Cora", name="Cora", transform=NormalizeFeatures(), split="full", num_val=100, num_test=508
 )
 
 original_data = dataset[0]
 
+trigger_size = 5
+num_nodes_to_inject = 150
+target_label = 1
+
 poisoned_train_data = PoisonedCora(
     dataset=dataset,
-    poison_tensor_size=5,
-    num_nodes_to_inject=15,
+    poison_tensor_size=trigger_size,
+    num_nodes_to_inject=num_nodes_to_inject,
     seed=seed,
-    target_label=2,
+    target_label=target_label,
 )
 
 # Need to ensre that the poison tensor size is the same for both test and train.
 poisoned_test_data = PoisonedCora(
     dataset=dataset,
-    poison_tensor_size=5,
-    num_nodes_to_inject=15,
+    poison_tensor_size=trigger_size,
+    num_nodes_to_inject=num_nodes_to_inject,
     seed=seed,
     is_test=True,
     test_with_poison=True,
-    target_label=2,
+    target_label=target_label,
 )
 
 model = getGNN(
@@ -101,18 +105,18 @@ print("Accuracy on the clean data: ", acc)
 acc = evaluate(unlearned_model, poisoned_test_data.data)
 print("Poison Success Rate: ", acc)
 
-print("===GIF===")
+# print("===GIF===")
 
-gif = get_unlearn_method("gif", model=model, data=poisoned_train_data.data)
-gif.set_unlearn_request("node")
-gif.set_nodes_to_unlearn(poisoned_train_data.data)
+# gif = get_unlearn_method("gif", model=model, data=poisoned_train_data.data)
+# gif.set_unlearn_request("node")
+# gif.set_nodes_to_unlearn(poisoned_train_data.data)
 
-unlearned_model = gif.unlearn()
+# unlearned_model = gif.unlearn()
 
-# Clean Accuracy
-acc = evaluate(unlearned_model, original_data)
-print("Accuracy on the clean data: ", acc)
+# # Clean Accuracy
+# acc = evaluate(unlearned_model, original_data)
+# print("Accuracy on the clean data: ", acc)
 
-# Poison Success Rate
-acc = evaluate(unlearned_model, poisoned_test_data.data)
-print("Poison Success Rate: ", acc)
+# # Poison Success Rate
+# acc = evaluate(unlearned_model, poisoned_test_data.data)
+# print("Poison Success Rate: ", acc)
