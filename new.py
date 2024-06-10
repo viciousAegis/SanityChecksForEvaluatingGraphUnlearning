@@ -1,3 +1,4 @@
+import copy
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -24,14 +25,19 @@ gen.manual_seed(seed)
 
 criterion = nn.CrossEntropyLoss()
 dataset = Planetoid(
-    root="/tmp/Cora", name="Cora", transform=NormalizeFeatures(), split="full", num_val=100, num_test=508
+    root="/tmp/CiteSeer",
+    name="CiteSeer",
+    transform=NormalizeFeatures(),
+    split="full",
+    num_val=100,
+    num_test=827,
 )
 
 original_data = dataset[0]
 
-trigger_size = 5
+trigger_size = 40
 num_nodes_to_inject = 150
-target_label = 1
+target_label = 0
 
 poisoned_train_data = PoisonedCora(
     dataset=dataset,
@@ -58,6 +64,9 @@ model = getGNN(
 optimizer = torch.optim.Adam(model.parameters(), lr=0.025, weight_decay=5e-4)
 train(model, poisoned_train_data.data, optimizer, criterion=criterion, num_epochs=200)
 
+# deep copy the model
+model_copy = copy.deepcopy(model)
+
 # Clean Accuracy
 acc = evaluate(model, original_data)
 print("Accuracy on the clean data: ", acc)
@@ -83,6 +92,7 @@ scrub.unlearn_nc(
 
 # Clean Accuracy
 acc = evaluate(model, original_data)
+print()
 print("Accuracy on the clean data: ", acc)
 
 # Poison Success Rate
@@ -91,18 +101,23 @@ print("Poison Success Rate: ", acc)
 
 print("\n--------------------------------\n")
 
-model = getGNN(
-    dataset
-)  # Using clean to initialise model, as it only takes num_classes and num_features
-optimizer = torch.optim.Adam(model.parameters(), lr=0.025, weight_decay=5e-4)
-train(model, poisoned_train_data.data, optimizer, criterion=criterion, num_epochs=200)
+# model = getGNN(
+#     dataset
+# )  # Using clean to initialise model, as it only takes num_classes and num_features
+# optimizer = torch.optim.Adam(model.parameters(), lr=0.025, weight_decay=5e-4)
+
+print("===RUN 2===")
+
+train(
+    model_copy, poisoned_train_data.data, optimizer, criterion=criterion, num_epochs=200
+)
 
 # Clean Accuracy
-acc = evaluate(model, original_data)
+acc = evaluate(model_copy, original_data)
 print("Accuracy on the clean data: ", acc)
 
 # Poison Success Rate
-acc = evaluate(model, poisoned_test_data.data)
+acc = evaluate(model_copy, poisoned_test_data.data)
 print("Poison Success Rate: ", acc)
 # ===unlearning===#
 
@@ -113,8 +128,8 @@ retain_mask = (
 
 print("===MEGU===")
 
-poisoned_train_data.data.num_classes = 7
-megu = get_unlearn_method("megu", model=model, data=poisoned_train_data.data)
+poisoned_train_data.data.num_classes = 6
+megu = get_unlearn_method("megu", model=model_copy, data=poisoned_train_data.data)
 megu.set_unlearn_request("node")
 megu.set_nodes_to_unlearn(poisoned_train_data.data)
 unlearned_model = megu.unlearn()

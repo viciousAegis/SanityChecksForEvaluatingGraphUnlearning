@@ -188,50 +188,23 @@ class MEGU(UnlearnMethod):
 
     def update_edge_index_unlearn(self, delete_nodes, delete_edge_index=None):
         edge_index = self.data.edge_index.numpy()
-
         unique_indices = np.where(edge_index[0] < edge_index[1])[0]
         unique_indices_not = np.where(edge_index[0] > edge_index[1])[0]
-
-        if self.unlearn_request == "edge":
+        if self.args["unlearn_task"] == 'edge':
             remain_indices = np.setdiff1d(unique_indices, delete_edge_index)
         else:
             unique_edge_index = edge_index[:, unique_indices]
-            delete_edge_indices = np.logical_or(
-                np.isin(unique_edge_index[0], delete_nodes),
-                np.isin(unique_edge_index[1], delete_nodes),
-            )
+            delete_edge_indices = np.logical_or(np.isin(unique_edge_index[0], delete_nodes),
+                                                np.isin(unique_edge_index[1], delete_nodes))
             remain_indices = np.logical_not(delete_edge_indices)
-            remain_indices = np.where(remain_indices == True)[0]
-
-        remain_encode = (
-            edge_index[0, remain_indices] * edge_index.shape[1] * 2
-            + edge_index[1, remain_indices]
-        )
-        unique_encode_not = (
-            edge_index[1, unique_indices_not] * edge_index.shape[1] * 2
-            + edge_index[0, unique_indices_not]
-        )
+            remain_indices = np.where(remain_indices == True)
+        remain_encode = edge_index[0, remain_indices] * edge_index.shape[1] * 2 + edge_index[1, remain_indices]
+        unique_encode_not = edge_index[1, unique_indices_not] * edge_index.shape[1] * 2 + edge_index[
+            0, unique_indices_not]
         sort_indices = np.argsort(unique_encode_not)
-
-        # print(f"sort_indices: {sort_indices}")
-        # print(f"unique_encode_not: {unique_encode_not}")
-        # print(f"remain_encode: {remain_encode}")
-
-        indices_to_check = np.searchsorted(
-            unique_encode_not, remain_encode, sorter=sort_indices
-        )
-        valid_indices = indices_to_check[indices_to_check < unique_encode_not.size]
-        valid_remain_encode = remain_encode[indices_to_check < unique_encode_not.size]
-
         remain_indices_not = unique_indices_not[
-            sort_indices[
-                np.searchsorted(
-                    unique_encode_not, valid_remain_encode, sorter=sort_indices
-                )
-            ]
-        ]
+            sort_indices[np.searchsorted(unique_encode_not, remain_encode, sorter=sort_indices)]]
         remain_indices = np.union1d(remain_indices, remain_indices_not)
-
         return torch.from_numpy(edge_index[:, remain_indices])
 
     def evaluate(self, run):

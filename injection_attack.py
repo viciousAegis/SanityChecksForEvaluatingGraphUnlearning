@@ -16,6 +16,9 @@ class PoisonedCora():
         G = to_networkx(self.data)
         self.degree = [i for (_, i) in G.degree()]
         sum_degree = np.sum(self.degree)
+        # avg_degree = int(sum_degree / len(self.degree))
+        print("avg_degree")
+        print(avg_degree)
         self.degree = [i/sum_degree for i in self.degree]
         
         print("Initial data:")
