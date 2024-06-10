@@ -43,9 +43,10 @@ def run_experiment(percent_to_be_removed):
     retain_mask = ~poisoned_train_mask
 
 
-    temp_data = original_data
+    temp_data = original_data.clone()
     for x in selected_train_indices:
         temp_data.train_mask[x] = False
+    
     poisoned_model = getGNN(dataset)
     optimizer = torch.optim.Adam(poisoned_model.parameters(), lr=0.025, weight_decay=5e-4)
     train(poisoned_model, temp_data, optimizer, criterion=criterion, num_epochs=200)
