@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 from torch_geometric.data import Dataset
-from torch_geometric.utils import add_self_loops, remove_self_loops, to_undirected
+from torch_geometric.utils import add_self_loops, remove_self_loops, to_undirected, to_networkx
 import copy
 
 class PoisonedCora():
@@ -13,6 +13,10 @@ class PoisonedCora():
         data = dataset[0]
         copied_data = copy.deepcopy(data)
         self.data = copied_data
+        G = to_networkx(self.data)
+        self.degree = [i for (_, i) in G.degree()]
+        sum_degree = np.sum(self.degree)
+        self.degree = [i/sum_degree for i in self.degree]
         
         print("Initial data:")
         self.print_data_statistics(data)
@@ -53,7 +57,8 @@ class PoisonedCora():
 
             # Creating new edges
             new_nodes_indices = torch.arange(num_nodes, num_nodes + num_nodes_to_inject)
-            connection_indices = np.random.choice(num_nodes, num_nodes_to_inject * avg_degree, replace=True)
+            connection_indices = np.random.choice(num_nodes, num_nodes_to_inject * avg_degree, p=self.degree, replace=True)
+            # connection_indices = np.random.choice(num_nodes, num_nodes_to_inject * avg_degree, replace=True)
             new_connections = torch.vstack((new_nodes_indices.repeat_interleave(avg_degree), torch.tensor(connection_indices)))
 
             # Update edge index and ensure it's undirected

@@ -89,6 +89,28 @@ print("Accuracy on the clean data: ", acc)
 acc = evaluate(model, poisoned_test_data.data)
 print("Poison Success Rate: ", acc)
 
+print("\n--------------------------------\n")
+
+model = getGNN(
+    dataset
+)  # Using clean to initialise model, as it only takes num_classes and num_features
+optimizer = torch.optim.Adam(model.parameters(), lr=0.025, weight_decay=5e-4)
+train(model, poisoned_train_data.data, optimizer, criterion=criterion, num_epochs=200)
+
+# Clean Accuracy
+acc = evaluate(model, original_data)
+print("Accuracy on the clean data: ", acc)
+
+# Poison Success Rate
+acc = evaluate(model, poisoned_test_data.data)
+print("Poison Success Rate: ", acc)
+# ===unlearning===#
+
+# Currently, we're training with the poisoned nodes, so this step is required.
+retain_mask = (
+    poisoned_train_data.data.train_mask & ~poisoned_train_data.data.poison_mask
+)
+
 print("===MEGU===")
 
 poisoned_train_data.data.num_classes = 7
