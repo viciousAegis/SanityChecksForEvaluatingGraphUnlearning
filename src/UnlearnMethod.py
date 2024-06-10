@@ -25,7 +25,10 @@ class UnlearnMethod(ABC):
 
         nodes_to_unlearn: list of node indices to unlearn (the injected nodes)
         """
-        poison_idx = data.poison_mask.nonzero().squeeze()
+        if random:
+            poison_idx = data.nonzero().squeeze()
+        else:
+            poison_idx = data.poison_mask.nonzero().squeeze()
         self.nodes_to_unlearn = poison_idx
 
     @abstractmethod
