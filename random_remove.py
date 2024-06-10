@@ -41,6 +41,17 @@ def run_experiment(percent_to_be_removed):
     poisoned_train_mask[selected_train_indices] = True
     
     retain_mask = ~poisoned_train_mask
+
+
+    temp_data = original_data
+    for x in selected_train_indices:
+        temp_data.train_mask[x] = False
+    poisoned_model = getGNN(dataset)
+    optimizer = torch.optim.Adam(poisoned_model.parameters(), lr=0.025, weight_decay=5e-4)
+    train(poisoned_model, original_data, optimizer, criterion=criterion, num_epochs=200)
+
+    acc = evaluate(poisoned_model, original_data)
+    print("Accuracy on the clean data: ", acc)
     
     print("\n NEW MODEL FOR SCRUB--------------------------------\n")
     
