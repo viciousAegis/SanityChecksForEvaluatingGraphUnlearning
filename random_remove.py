@@ -48,7 +48,7 @@ def run_experiment(percent_to_be_removed):
         temp_data.train_mask[x] = False
     poisoned_model = getGNN(dataset)
     optimizer = torch.optim.Adam(poisoned_model.parameters(), lr=0.025, weight_decay=5e-4)
-    train(poisoned_model, original_data, optimizer, criterion=criterion, num_epochs=200)
+    train(poisoned_model, temp_data, optimizer, criterion=criterion, num_epochs=200)
 
     acc = evaluate(poisoned_model, original_data)
     print("Accuracy on the clean data: ", acc)
