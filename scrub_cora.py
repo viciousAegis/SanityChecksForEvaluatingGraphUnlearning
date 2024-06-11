@@ -24,11 +24,14 @@ gen = torch.Generator()
 gen.manual_seed(seed)
 
 criterion = nn.CrossEntropyLoss()
+# dataset = Planetoid(
+#     root="/tmp/CiteSeer",
+#     name="CiteSeer",
+#     transform=NormalizeFeatures(),
+#     split="full",
+# )
 dataset = Planetoid(
-    root="/tmp/CiteSeer",
-    name="CiteSeer",
-    transform=NormalizeFeatures(),
-    split="full",
+    root="/tmp/Cora", name="Cora", transform=NormalizeFeatures(), split="random", num_train_per_class=309,num_val=0, num_test=545,
 )
 
 original_data = dataset[0]
@@ -86,13 +89,13 @@ train(model, poisoned_train_data.data, optimizer, criterion=criterion, num_epoch
 # model_copy = copy.deepcopy(model)
 
 # Clean Accuracy
-acc = evaluate(model, original_data)
+_,_,acc = test(model, original_data)
 print("Accuracy on the clean data: ", acc)
 
 # wandb.log({"og_clean_acc": acc})
 
 # Poison Success Rate
-acc = evaluate(model, poisoned_test_data.data)
+_,_,acc = test(model, poisoned_test_data.data)
 print("Poison Success Rate: ", acc)
 
 # wandb.log({"og_psr": acc})
@@ -113,14 +116,14 @@ scrub.unlearn_nc(
 )
 
 # Clean Accuracy
-acc = evaluate(model, original_data)
+_,_,acc = test(model, original_data)
 print()
 print("Accuracy on the clean data: ", acc)
 
 # wandb.log({"unlearn_clean_acc": acc})
 
 # Poison Success Rate
-acc = evaluate(model, poisoned_test_data.data)
+acc = test(model, poisoned_test_data.data)
 print("Poison Success Rate: ", acc)
 
 # wandb.log({"unlearn_psr": acc})

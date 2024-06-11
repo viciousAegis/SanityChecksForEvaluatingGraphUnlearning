@@ -13,7 +13,7 @@ from train import *
 import wandb
 from src.config import args
 
-seed = 420
+seed = 69
 random.seed(seed)
 np.random.seed(seed)
 torch.manual_seed(seed)
@@ -22,18 +22,27 @@ gen = torch.Generator()
 gen.manual_seed(seed)
 
 criterion = nn.CrossEntropyLoss()
+# dataset = Planetoid(
+#     root="/tmp/CiteSeer",
+#     name="CiteSeer",
+#     transform=NormalizeFeatures(),
+#     split="full",
+# )
 dataset = Planetoid(
-    root="/tmp/CiteSeer",
-    name="CiteSeer",
+    root="/tmp/Cora",
+    name="Cora",
     transform=NormalizeFeatures(),
-    split="full",
+    split="random",
+    num_train_per_class=309,
+    num_val=0,
+    num_test=545,
 )
 
 original_data = dataset[0]
 
-trigger_size = 30
+trigger_size = 50
 num_nodes_to_inject = 50
-target_label = 0
+target_label = 1
 
 # wandb.login(key="89ab31781eb2ba697ea9aed8d264c4f778a004ef")
 
@@ -84,33 +93,35 @@ optimizer = torch.optim.Adam(model.parameters(), lr=0.025, weight_decay=5e-4)
 train(model, poisoned_train_data.data, optimizer, criterion=criterion, num_epochs=200)
 
 # Clean Accuracy
-acc = evaluate(model, original_data)
+acc, f1 = test_new(model, original_data)
 print("Accuracy on the clean data: ", acc)
+print("F1 Score on the clean data: ", f1)
 
 # wandb.log({"og_clean_acc": acc})
 
 # Poison Success Rate
-acc = evaluate(model, poisoned_test_data.data)
+acc, _ = test_new(model, poisoned_test_data.data)
 print("Poison Success Rate: ", acc)
 
 # wandb.log({"og_psr": acc})
 
 print("===MEGU===")
 
-poisoned_train_data.data.num_classes = 6
+poisoned_train_data.data.num_classes = 7
 megu = get_unlearn_method("megu", model=model, data=poisoned_train_data.data)
 megu.set_unlearn_request("node")
 megu.set_nodes_to_unlearn(poisoned_train_data.data)
 unlearned_model = megu.unlearn()
 
 # Clean Accuracy
-acc = evaluate(unlearned_model, original_data)
+acc, f1 = test_new(unlearned_model, original_data)
 print("Accuracy on the clean data: ", acc)
+print("F1 Score on the clean data: ", f1)
 
 # wandb.log({"unlearn_clean_acc": acc})
 
 # Poison Success Rate
-acc = evaluate(model, poisoned_test_data.data)
+acc, _ = test_new(model, poisoned_test_data.data)
 print("Poison Success Rate: ", acc)
 
 # wandb.log({"unlearn_psr": acc})

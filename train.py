@@ -1,6 +1,6 @@
 import torch.nn.functional as F
 from torchmetrics import Accuracy
-from torchmetrics.classification import MulticlassAccuracy
+from torchmetrics.classification import MulticlassAccuracy, F1Score
 import torch
 
 
@@ -27,6 +27,20 @@ def test(model, data):
             acc = pred.eq(data.y[mask]).sum().item() / mask.sum().item()
         accs.append(acc)
     return accs
+
+def test_new(model, data):
+    model.eval()
+    logits = model(data.x, data.edge_index)
+    pred = logits[data.test_mask].max(1)[1]
+    acc = 0
+    if(data.test_mask.sum().item() == 0):
+        acc = 0
+    else:
+        acc = pred.eq(data.y[data.test_mask]).sum().item() / data.test_mask.sum().item()
+    
+    f1 = F1Score(num_classes=data.y.max().item() + 1, average='micro', task='multiclass')
+    f1_score = f1(pred, data.y[data.test_mask])
+    return acc, f1_score.item()
 
 
 def train(model, data, optimizer, criterion, num_epochs):

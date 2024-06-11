@@ -75,11 +75,11 @@ train(model, poisoned_train_data.data, optimizer, criterion=criterion, num_epoch
 model_copy = copy.deepcopy(model)
 
 # Clean Accuracy
-acc = evaluate(model, original_data)
+acc = test(model, original_data)
 print("Accuracy on the clean data: ", acc)
 
 # Poison Success Rate
-acc = evaluate(model, poisoned_test_data.data)
+acc = test(model, poisoned_test_data.data)
 print("Poison Success Rate: ", acc)
 # ===unlearning===#
 
@@ -98,12 +98,12 @@ scrub.unlearn_nc(
 )
 
 # Clean Accuracy
-acc = evaluate(model, original_data)
+acc = test(model, original_data)
 print()
 print("Accuracy on the clean data: ", acc)
 
 # Poison Success Rate
-acc = evaluate(model, poisoned_test_data.data)
+acc = test(model, poisoned_test_data.data)
 print("Poison Success Rate: ", acc)
 
 print("\n--------------------------------\n")
@@ -120,11 +120,11 @@ train(
 )
 
 # Clean Accuracy
-acc = evaluate(model_copy, original_data)
+acc = test(model_copy, original_data)
 print("Accuracy on the clean data: ", acc)
 
 # Poison Success Rate
-acc = evaluate(model_copy, poisoned_test_data.data)
+acc = test(model_copy, poisoned_test_data.data)
 print("Poison Success Rate: ", acc)
 # ===unlearning===#
 
@@ -142,11 +142,11 @@ megu.set_nodes_to_unlearn(poisoned_train_data.data)
 unlearned_model = megu.unlearn()
 
 # Clean Accuracy
-acc = evaluate(unlearned_model, original_data)
+acc = test(unlearned_model, original_data)
 print("Accuracy on the clean data: ", acc)
 
 # Poison Success Rate
-acc = evaluate(unlearned_model, poisoned_test_data.data)
+acc = test(unlearned_model, poisoned_test_data.data)
 print("Poison Success Rate: ", acc)
 
 # print("===GIF===")
@@ -158,9 +158,9 @@ print("Poison Success Rate: ", acc)
 # unlearned_model = gif.unlearn()
 
 # # Clean Accuracy
-# acc = evaluate(unlearned_model, original_data)
+# acc = test(unlearned_model, original_data)
 # print("Accuracy on the clean data: ", acc)
 
 # # Poison Success Rate
-# acc = evaluate(unlearned_model, poisoned_test_data.data)
+# acc = test(unlearned_model, poisoned_test_data.data)
 # print("Poison Success Rate: ", acc)
