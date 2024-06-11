@@ -4,12 +4,13 @@ from torch_geometric.transforms import NormalizeFeatures
 from torch_geometric.datasets import Planetoid
 import random
 import numpy as np
+import csv
 import copy
 from injection_attack import PoisonedCora
 from scrub import Scrub
 from models import getGNN
 from src.unlearn_methods import get_unlearn_method
-from train import test, train, evaluate
+from train import test, train, evaluate, test_new
 from opts import parse_args
 
 def edge_index_to_tuples(edge_index):
@@ -122,9 +123,15 @@ def run_experiment(percent_to_be_removed):
     optimizer = torch.optim.Adam(poisoned_model.parameters(), lr=1e-2, weight_decay=5e-4)
     train(poisoned_model, temp_data, optimizer, criterion=criterion, num_epochs=200)
 
-    acc = evaluate(poisoned_model, original_data)
-    print("RETRAINING FROM START: Accuracy on the clean data: ", acc)
+    # acc = evaluate(poisoned_model, original_data)
+    acc, f1 = test_new(poisoned_model, original_data)
+    print("RETRAINING FROM START: Accuracy and f1 on the clean data: ", acc, f1)
     
+    acc_del_mask, f1_del_mask = test_new(poisoned_model, original_data, poisoned_train_mask)
+    print("RETRAINING FROM START: Accuracy and f1 score on the delete set: ", acc_del_mask, f1_del_mask)
+
+    retrain_results = (acc, f1, acc_del_mask, f1_del_mask)
+
     print("\n NEW MODEL FOR SCRUB--------------------------------\n")
     
     model = getGNN(dataset)  # Using clean to initialise model, as it only takes num_classes and num_features
@@ -132,9 +139,11 @@ def run_experiment(percent_to_be_removed):
     train(model, original_data, optimizer, criterion=criterion, num_epochs=200)
     
     # Clean Accuracy
-    acc = evaluate(model, original_data)
-    # acc = test(model, original_data)
-    print("ORIGINAL MODEL: Accuracy on the clean data: ", acc)
+    # acc = evaluate(model, original_data)
+    acc, f1 = test_new(model, original_data)
+    print("ORIGINAL MODEL: Accuracy and f1 on the clean data: ", acc, f1)
+
+    original_results = (acc, f1)
     
     model_copy = copy.deepcopy(model)
     
@@ -148,15 +157,22 @@ def run_experiment(percent_to_be_removed):
     )
     print()
     # Clean Accuracy
-    acc = evaluate(model, original_data)
-    print("Accuracy on the clean data: ", acc)
+    # acc = evaluate(model, original_data)
+    acc, f1 = test_new(model, original_data)
+    print("Accuracy and f1 on the clean data: ", acc, f1)
+
+    acc_del_mask, f1_del_mask = test_new(model, original_data, poisoned_train_mask)
+    print("Accuracy and f1 score on the delete set: ", acc_del_mask, f1_del_mask)
+
+    scrub_results = (acc, f1, acc_del_mask, f1_del_mask)
     
     print("\n NEW MODEL FOR MEGU--------------------------------\n")
     
     # Clean Accuracy
-    acc = evaluate(model_copy, original_data)
-    print("ORIGINAL MODEL: Accuracy on the clean data: ", acc)
-    
+    # acc = evaluate(model_copy, original_data)
+    acc, f1 = test_new(model_copy, original_data)
+    print("ORIGINAL MODEL: Accuracy and f1 on the clean data: ", acc, f1)
+
     print("===MEGU===")
     
     original_data.num_classes = num_classes
@@ -166,11 +182,51 @@ def run_experiment(percent_to_be_removed):
     unlearned_model = megu.unlearn()
     
     # Clean Accuracy
-    acc = evaluate(unlearned_model, original_data)
-    print("Accuracy on the clean data: ", acc)
+    # acc = evaluate(unlearned_model, original_data)
+    acc, f1 = test_new(unlearned_model, original_data)
+    print("Accuracy and f1 score on the clean data: ", acc, f1)
+
+    acc_del_mask, f1_del_mask = test_new(unlearned_model, original_data, poisoned_train_mask)
+    print("Accuracy and f1 score on the delete set: ", acc_del_mask, f1_del_mask)
+
+    megu_results = (acc, f1, acc_del_mask, f1_del_mask)
+
+    return original_results, retrain_results, scrub_results, megu_results
 
 if __name__ == "__main__":
     percentages = [0.05, 0.1, 0.2, 0.3, 0.4, 0.5]
+    results = []
     for percent in percentages:
         print(f"\nRunning experiment with percent_to_be_removed = {percent}\n")
-        run_experiment(percent)
+        original_results, retrain_results, scrub_results, megu_results = run_experiment(percent)
+        result_row = (
+            percent, 
+            original_results[0], original_results[1],
+            retrain_results[0], retrain_results[1], retrain_results[2], retrain_results[3],
+            scrub_results[0], scrub_results[1], scrub_results[2], scrub_results[3],
+            megu_results[0], megu_results[1], megu_results[2], megu_results[3]
+        )
+        results.append(result_row)
+        header = [
+            "Percent of nodes removed",
+            "Original Model accuracy",
+            "Original Model f1",
+            "Retrain from scratch acc",
+            "Retrain from scratch f1",
+            "Retrain from scratch acc on delete set",
+            "Retrain from scratch f1 on delete set",
+            "Scrub accuracy",
+            "Scrub f1",
+            "Scrub accuracy on delete set",
+            "Scrub f1 on delete set",
+            "MEGU accuracy",
+            "MEGU f1",
+            "MEGU acc on delete set",
+            "MEGU f1 on delete set"
+        ]
+        with open('Cora_randomremoval_results.csv', 'w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(header)
+            writer.writerows(results)
+        
+        print("Results saved to 'Cora_randomremoval_results.csv'")
