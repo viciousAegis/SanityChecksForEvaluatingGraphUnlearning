@@ -9,7 +9,7 @@ from injection_attack import PoisonedCora
 from scrub import Scrub
 from models import getGNN
 from src.unlearn_methods import get_unlearn_method
-from train import train, evaluate
+from train import test, train, evaluate
 from opts import parse_args
 
 def edge_index_to_tuples(edge_index):
@@ -119,7 +119,7 @@ def run_experiment(percent_to_be_removed):
     
     # exit()
     poisoned_model = getGNN(dataset)
-    optimizer = torch.optim.Adam(poisoned_model.parameters(), lr=1e-3, weight_decay=5e-4)
+    optimizer = torch.optim.Adam(poisoned_model.parameters(), lr=1e-2, weight_decay=5e-4)
     train(poisoned_model, temp_data, optimizer, criterion=criterion, num_epochs=200)
 
     acc = evaluate(poisoned_model, original_data)
@@ -128,11 +128,12 @@ def run_experiment(percent_to_be_removed):
     print("\n NEW MODEL FOR SCRUB--------------------------------\n")
     
     model = getGNN(dataset)  # Using clean to initialise model, as it only takes num_classes and num_features
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-3, weight_decay=5e-4)
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-2, weight_decay=5e-4)
     train(model, original_data, optimizer, criterion=criterion, num_epochs=200)
     
     # Clean Accuracy
     acc = evaluate(model, original_data)
+    # acc = test(model, original_data)
     print("ORIGINAL MODEL: Accuracy on the clean data: ", acc)
     
     model_copy = copy.deepcopy(model)

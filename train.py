@@ -45,7 +45,7 @@ def evaluate(model, dataset):
     model.eval()
     device = dataset.x.device
     num_classes = len(torch.unique(dataset.y))
-    accuracy = MulticlassAccuracy(num_classes=num_classes).to(device)
+    accuracy = MulticlassAccuracy(num_classes=num_classes, average='micro').to(device)
 
     with torch.no_grad():
         out = model(dataset.x, dataset.edge_index)

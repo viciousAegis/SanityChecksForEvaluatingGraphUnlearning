@@ -15,7 +15,7 @@ from opts import parse_args
 
 opt = parse_args()
 
-seed = 1235
+seed = 42
 random.seed(seed)
 np.random.seed(seed)
 torch.manual_seed(seed)
@@ -25,19 +25,17 @@ gen.manual_seed(seed)
 
 criterion = nn.CrossEntropyLoss()
 dataset = Planetoid(
-    root="/tmp/CiteSeer",
-    name="CiteSeer",
+    root="/tmp/Cora",
+    name="Cora",
     transform=NormalizeFeatures(),
     split="full",
-    num_val=100,
-    num_test=827,
 )
 
 original_data = dataset[0]
 
-trigger_size = 40
-num_nodes_to_inject = 150
-target_label = 0
+trigger_size = 50
+num_nodes_to_inject = 50
+target_label = 1
 
 poisoned_train_data = PoisonedCora(
     dataset=dataset,
@@ -57,6 +55,15 @@ poisoned_test_data = PoisonedCora(
     test_with_poison=True,
     target_label=target_label,
 )
+
+# load from pickle
+import pickle
+
+# with open("poisoned_train_data.pkl", "rb") as f:
+#     poisoned_train_data = pickle.load(f)
+
+# with open("poisoned_test_data.pkl", "rb") as f:
+#     poisoned_test_data = pickle.load(f)
 
 model = getGNN(
     dataset
@@ -128,7 +135,7 @@ retain_mask = (
 
 print("===MEGU===")
 
-poisoned_train_data.data.num_classes = 6
+poisoned_train_data.data.num_classes = 7
 megu = get_unlearn_method("megu", model=model_copy, data=poisoned_train_data.data)
 megu.set_unlearn_request("node")
 megu.set_nodes_to_unlearn(poisoned_train_data.data)
