@@ -28,18 +28,20 @@ def test(model, data):
         accs.append(acc)
     return accs
 
-def test_new(model, data):
+def test_new(model, data, mask=None):
+    if(mask == None):
+        mask = data.test_mask
     model.eval()
     logits = model(data.x, data.edge_index)
-    pred = logits[data.test_mask].max(1)[1]
+    pred = logits[mask].max(1)[1]
     acc = 0
-    if(data.test_mask.sum().item() == 0):
+    if(mask.sum().item() == 0):
         acc = 0
     else:
-        acc = pred.eq(data.y[data.test_mask]).sum().item() / data.test_mask.sum().item()
+        acc = pred.eq(data.y[mask]).sum().item() / mask.sum().item()
     
     f1 = F1Score(num_classes=data.y.max().item() + 1, average='micro', task='multiclass')
-    f1_score = f1(pred, data.y[data.test_mask])
+    f1_score = f1(pred, data.y[mask])
     return acc, f1_score.item()
 
 
