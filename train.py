@@ -20,7 +20,11 @@ def test(model, data):
     accs = []
     for mask in [data.train_mask, data.val_mask, data.test_mask]:
         pred = logits[mask].max(1)[1]
-        acc = pred.eq(data.y[mask]).sum().item() / mask.sum().item()
+        acc = 0
+        if(mask.sum().item() == 0):
+            acc = 0
+        else:
+            acc = pred.eq(data.y[mask]).sum().item() / mask.sum().item()
         accs.append(acc)
     return accs
 
