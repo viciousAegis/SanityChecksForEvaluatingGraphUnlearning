@@ -32,8 +32,8 @@ def parse_args():
     # Method Specific Params
     parser.add_argument('--factor', type=float, default=0.1, help='Magnitude to decrease weights')
     parser.add_argument('--kd_T', type=float, default=4, help='Knowledge distilation temperature for SCRUB')
-    parser.add_argument('--alpha', type=float, default=1, help='KL from og_model constant for SCRUB, higher incentivizes closeness to ogmodel')
-    parser.add_argument('--msteps', type=int, default=15, help='Maximization steps on forget set for SCRUB')
+    parser.add_argument('--alpha', type=float, default=0.5, help='KL from og_model constant for SCRUB, higher incentivizes closeness to ogmodel')
+    parser.add_argument('--msteps', type=int, default=10, help='Maximization steps on forget set for SCRUB')
     parser.add_argument('--SSDdampening', type=float, default=1.0, help='SSD: lambda aka dampening constant, lower leads to more forgetting')
     parser.add_argument('--SSDselectwt', type=float, default=10.0, help='SSD: alpha aka selection weight, lower leads to more forgetting')
     parser.add_argument('--rsteps', type=int, default=800, help='InfRe when to stop retain set gradient descent')
@@ -42,8 +42,8 @@ def parse_args():
     # Optimizer Params
     parser.add_argument('--batch_size', type=int, default=512, help='input batch size for training (default: 128)') 
     parser.add_argument('--pretrain_iters', type=int, default=300, help='number of epochs to train (default: 31)')
-    parser.add_argument('--unlearn_iters', type=int, default=50, help='number of epochs to train (default: 31)')
-    parser.add_argument('--unlearn_lr', type=float, default=0.015, help='learning rate (default: 0.025)')
+    parser.add_argument('--unlearn_iters', type=int, default=100, help='number of epochs to train (default: 31)')
+    parser.add_argument('--unlearn_lr', type=float, default=0.01, help='learning rate (default: 0.025)')
     parser.add_argument('--pretrain_lr', type=float, default=0.0001, help='learning rate (default: 0.025)')
     parser.add_argument('--wd', type=float, default=0.0005, help='learning rate (default: 0.01)')
     
