@@ -15,7 +15,7 @@ import wandb
 
 opt = parse_args()
 
-seed = 420
+seed = 69
 random.seed(seed)
 np.random.seed(seed)
 torch.manual_seed(seed)
@@ -31,12 +31,18 @@ criterion = nn.CrossEntropyLoss()
 #     split="full",
 # )
 dataset = Planetoid(
-    root="/tmp/Cora", name="Cora", transform=NormalizeFeatures(), split="random", num_train_per_class=309,num_val=0, num_test=545,
+    root="/tmp/CiteSeer",
+    name="CiteSeer",
+    transform=NormalizeFeatures(),
+    split="random",
+    num_train_per_class=443,
+    num_val=0,
+    num_test=669,
 )
 
 original_data = dataset[0]
 
-trigger_size = 30
+trigger_size = 50
 num_nodes_to_inject = 50
 target_label = 0
 
@@ -89,13 +95,14 @@ train(model, poisoned_train_data.data, optimizer, criterion=criterion, num_epoch
 # model_copy = copy.deepcopy(model)
 
 # Clean Accuracy
-_,_,acc = test(model, original_data)
+acc, f1 = test_new(model, original_data)
 print("Accuracy on the clean data: ", acc)
+print("F1 Score on the clean data: ", f1)
 
 # wandb.log({"og_clean_acc": acc})
 
 # Poison Success Rate
-_,_,acc = test(model, poisoned_test_data.data)
+acc, f1 = test_new(model, poisoned_test_data.data)
 print("Poison Success Rate: ", acc)
 
 # wandb.log({"og_psr": acc})
@@ -116,14 +123,15 @@ scrub.unlearn_nc(
 )
 
 # Clean Accuracy
-_,_,acc = test(model, original_data)
+acc, f1 = test_new(model, original_data)
 print()
 print("Accuracy on the clean data: ", acc)
+print("F1 Score on the clean data: ", f1)
 
 # wandb.log({"unlearn_clean_acc": acc})
 
 # Poison Success Rate
-acc = test(model, poisoned_test_data.data)
+acc, f1 = test_new(model, poisoned_test_data.data)
 print("Poison Success Rate: ", acc)
 
 # wandb.log({"unlearn_psr": acc})

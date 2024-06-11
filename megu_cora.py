@@ -29,20 +29,20 @@ criterion = nn.CrossEntropyLoss()
 #     split="full",
 # )
 dataset = Planetoid(
-    root="/tmp/Cora",
-    name="Cora",
+    root="/tmp/CiteSeer",
+    name="CiteSeer",
     transform=NormalizeFeatures(),
     split="random",
-    num_train_per_class=309,
+    num_train_per_class=443,
     num_val=0,
-    num_test=545,
+    num_test=669,
 )
 
 original_data = dataset[0]
 
 trigger_size = 50
 num_nodes_to_inject = 50
-target_label = 1
+target_label = 0
 
 # wandb.login(key="89ab31781eb2ba697ea9aed8d264c4f778a004ef")
 
@@ -107,7 +107,7 @@ print("Poison Success Rate: ", acc)
 
 print("===MEGU===")
 
-poisoned_train_data.data.num_classes = 7
+poisoned_train_data.data.num_classes = 6
 megu = get_unlearn_method("megu", model=model, data=poisoned_train_data.data)
 megu.set_unlearn_request("node")
 megu.set_nodes_to_unlearn(poisoned_train_data.data)
