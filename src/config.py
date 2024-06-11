@@ -131,19 +131,19 @@ def load_args():
     parser.add_argument(
         "--megu_num_epochs",
         type=int,
-        default= 200,
+        default= 10,
         help="Epoch number for MEGU",
     )
     parser.add_argument(
         "--megu_num_runs",
         type=int,
-        default= 2,
+        default= 10,
         help="Runs number for MEGU",
     )
     parser.add_argument(
         "--megu_unlearn_lr",
         type=float,
-        default= 0.05,
+        default= 1e-4,
         help="Learning ratio for unlearn loop in MEGU",
     )
     parser.add_argument(
