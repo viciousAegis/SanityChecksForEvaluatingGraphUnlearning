@@ -51,21 +51,26 @@ class PoisonedCora:
         self.poison_tensor = torch.ones(poison_tensor_size, dtype=torch.float32)
         self.is_test = is_test
         self.test_with_poison = test_with_poison
-        self.data = self.augment_cora_dataset(
-            data,
-            num_nodes_to_inject,
-            threshold_for_flipping,
-            avg_degree,
-            self.target_label,
-            include_in_train,
-        )
-        print("Data after augmentation:")
-        self.print_data_statistics(self.data)
+
         if not self.is_test:
+            print("TRAINING NOW")
+            self.data = self.augment_cora_dataset(
+                data,
+                num_nodes_to_inject,
+                threshold_for_flipping,
+                avg_degree,
+                self.target_label,
+                include_in_train,
+            )
+            print("Data after augmentation:")
+            self.print_data_statistics(self.data)
+
             self.poison_indices = self.get_poison_indices(num_nodes_to_inject)
             if num_nodes_to_inject > 0 and self.poison_indices.numel() > 0:
                 self.apply_poison()
         elif self.test_with_poison:
+            print("TESTING NOW")
+            self.print_data_statistics(self.data)
             self.apply_poison_to_test()
 
     def augment_cora_dataset(

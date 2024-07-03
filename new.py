@@ -15,7 +15,7 @@ from opts import parse_args
 
 opt = parse_args()
 
-seed = 42
+seed = 3
 random.seed(seed)
 np.random.seed(seed)
 torch.manual_seed(seed)
@@ -32,8 +32,7 @@ dataset = Planetoid(
 )
 
 original_data = dataset[0]
-
-trigger_size = 50
+trigger_size = 10
 num_nodes_to_inject = 50
 target_label = 1
 
@@ -45,7 +44,7 @@ poisoned_train_data = PoisonedCora(
     target_label=target_label,
 )
 
-# Need to ensre that the poison tensor size is the same for both test and train.
+# Need to ensure that the poison tensor size is the same for both test and train.
 poisoned_test_data = PoisonedCora(
     dataset=dataset,
     poison_tensor_size=trigger_size,
@@ -56,98 +55,82 @@ poisoned_test_data = PoisonedCora(
     target_label=target_label,
 )
 
-# load from pickle
-import pickle
-
-# with open("poisoned_train_data.pkl", "rb") as f:
-#     poisoned_train_data = pickle.load(f)
-
-# with open("poisoned_test_data.pkl", "rb") as f:
-#     poisoned_test_data = pickle.load(f)
-
-model = getGNN(
-    dataset
-)  # Using clean to initialise model, as it only takes num_classes and num_features
+model = getGNN(dataset)
 optimizer = torch.optim.Adam(model.parameters(), lr=0.025, weight_decay=5e-4)
 train(model, poisoned_train_data.data, optimizer, criterion=criterion, num_epochs=200)
 
-# deep copy the model
 model_copy = copy.deepcopy(model)
-
-# Clean Accuracy
 acc = test(model, original_data)
 print("Accuracy on the clean data: ", acc)
-
-# Poison Success Rate
 acc = test(model, poisoned_test_data.data)
 print("Poison Success Rate: ", acc)
-# ===unlearning===#
+# # ===unlearning===#
 
-# Currently, we're training with the poisoned nodes, so this step is required.
-retain_mask = (
-    poisoned_train_data.data.train_mask & ~poisoned_train_data.data.poison_mask
-)
+# # Currently, we're training with the poisoned nodes, so this step is required.
+# retain_mask = (
+#     poisoned_train_data.data.train_mask & ~poisoned_train_data.data.poison_mask
+# )
 
-print("===Scrub===")
+# print("===Scrub===")
 
-scrub = Scrub(opt=opt, model=model)
-scrub.unlearn_nc(
-    dataset=poisoned_train_data.data,
-    train_mask=retain_mask,
-    forget_mask=poisoned_train_data.data.poison_mask,
-)
+# scrub = Scrub(opt=opt, model=model)
+# scrub.unlearn_nc(
+#     dataset=poisoned_train_data.data,
+#     train_mask=retain_mask,
+#     forget_mask=poisoned_train_data.data.poison_mask,
+# )
 
-# Clean Accuracy
-acc = test(model, original_data)
-print()
-print("Accuracy on the clean data: ", acc)
+# # Clean Accuracy
+# acc = test(model, original_data)
+# print()
+# print("Accuracy on the clean data: ", acc)
 
-# Poison Success Rate
-acc = test(model, poisoned_test_data.data)
-print("Poison Success Rate: ", acc)
+# # Poison Success Rate
+# acc = test(model, poisoned_test_data.data)
+# print("Poison Success Rate: ", acc)
 
-print("\n--------------------------------\n")
+# print("\n--------------------------------\n")
 
 # model = getGNN(
 #     dataset
 # )  # Using clean to initialise model, as it only takes num_classes and num_features
 # optimizer = torch.optim.Adam(model.parameters(), lr=0.025, weight_decay=5e-4)
 
-print("===RUN 2===")
+# print("===RUN 2===")
 
-train(
-    model_copy, poisoned_train_data.data, optimizer, criterion=criterion, num_epochs=200
-)
+# train(
+#     model_copy, poisoned_train_data.data, optimizer, criterion=criterion, num_epochs=200
+# )
 
-# Clean Accuracy
-acc = test(model_copy, original_data)
-print("Accuracy on the clean data: ", acc)
+# # Clean Accuracy
+# acc = test(model_copy, original_data)
+# print("Accuracy on the clean data: ", acc)
 
-# Poison Success Rate
-acc = test(model_copy, poisoned_test_data.data)
-print("Poison Success Rate: ", acc)
-# ===unlearning===#
+# # Poison Success Rate
+# acc = test(model_copy, poisoned_test_data.data)
+# print("Poison Success Rate: ", acc)
+# # ===unlearning===#
 
-# Currently, we're training with the poisoned nodes, so this step is required.
-retain_mask = (
-    poisoned_train_data.data.train_mask & ~poisoned_train_data.data.poison_mask
-)
+# # Currently, we're training with the poisoned nodes, so this step is required.
+# retain_mask = (
+#     poisoned_train_data.data.train_mask & ~poisoned_train_data.data.poison_mask
+# )
 
-print("===MEGU===")
+# print("===MEGU===")
 
-poisoned_train_data.data.num_classes = 7
-megu = get_unlearn_method("megu", model=model_copy, data=poisoned_train_data.data)
-megu.set_unlearn_request("node")
-megu.set_nodes_to_unlearn(poisoned_train_data.data)
-unlearned_model = megu.unlearn()
+# poisoned_train_data.data.num_classes = 7
+# megu = get_unlearn_method("megu", model=model_copy, data=poisoned_train_data.data)
+# megu.set_unlearn_request("node")
+# megu.set_nodes_to_unlearn(poisoned_train_data.data)
+# unlearned_model = megu.unlearn()
 
-# Clean Accuracy
-acc = test(unlearned_model, original_data)
-print("Accuracy on the clean data: ", acc)
+# # Clean Accuracy
+# acc = test(unlearned_model, original_data)
+# print("Accuracy on the clean data: ", acc)
 
-# Poison Success Rate
-acc = test(unlearned_model, poisoned_test_data.data)
-print("Poison Success Rate: ", acc)
+# # Poison Success Rate
+# acc = test(unlearned_model, poisoned_test_data.data)
+# print("Poison Success Rate: ", acc)
 
 # print("===GIF===")
 
