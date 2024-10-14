@@ -1,4 +1,6 @@
-# AdversarialUnlearning
+# Sanity Checks for Evaluation Graph Unlearning
+
+Code for the paper, Sanity Checks for Evaluation Graph Unlearning, accepted at [CoLLAs 2024 Workshop Track](https://lifelong-ml.cc/Conferences/2024/acceptedpapersandvideos/conf-2024-71)
 
 _use a virtual env!!!_
 
